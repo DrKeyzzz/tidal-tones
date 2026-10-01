@@ -1,0 +1,1859 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tidal Tones</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Josefin+Sans:wght@400;600;700&family=Noto+Music&display=swap">
+<style>
+/* Layout: a harbor-master's chart table — logbook header, the sea as a wide canvas with the lighthouse at its left edge, a signal-flag answer pad, then the voyage settings. Single night-harbor look by choice. */
+:root {
+  --deep: #0c1a24;
+  --tide: #122836;
+  --tide-2: #183345;
+  --rope: #2c4b5e;
+  --moon: #eee8da;
+  --mist: #9db3bf;
+  --lamp: #ffc45c;
+  --flare: #ff6a55;
+  --safe: #6fd6c0;
+  --f-display: "Abril Fatface", "Playfair Display", Didot, Georgia, serif;
+  --f-ui: "Josefin Sans", "Futura", "Century Gothic", ui-sans-serif, system-ui, sans-serif;
+  --f-music: "Noto Music", "Bravura Text", "Apple Symbols", serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+html, body { background: var(--deep); color: var(--moon); }
+body { margin: 0; }
+body { font-family: var(--f-ui); font-size: 15px; line-height: 1.45; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 40px; display: flex; flex-direction: column; gap: 14px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: end; gap: 12px 24px; }
+header.top .brand { margin-right: auto; }
+body[data-view="splash"] header.top { align-items: start; }
+.brand { display: flex; flex-direction: column; gap: 4px; }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .24em; text-transform: uppercase; color: var(--lamp); }
+h1 { font-family: var(--f-display); font-weight: 400; font-size: clamp(32px, 5.5vw, 46px); line-height: .95; margin: 0; color: var(--moon); view-transition-name: hl-title; width: fit-content; }
+body[data-view="splash"] h1 { font-size: clamp(54px, 11vw, 112px); line-height: .88; text-wrap: balance; }
+body[data-view="splash"] h1::after { content: ""; display: block; width: .9em; height: 4px; margin-top: .14em; background: var(--lamp); box-shadow: 0 0 18px var(--lamp); border-radius: 2px; }
+body[data-game="intervals"] .notes-only, body:not([data-game="intervals"]) .ivl-only, body:not([data-view="splash"]) .splash-only, body:not([data-view="game"]) .game-only, body:not([data-view="board"]) .board-only, body[data-view="board"] .stage { display: none !important; }
+
+.hero { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 32px; margin-top: -4px; }
+.tagline { margin: 0; font-size: 18px; line-height: 1.5; color: var(--moon); max-width: 44ch; text-wrap: pretty; }
+.howto { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.howto li { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--mist); max-width: 22ch; }
+.howto b { flex: none; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--lamp); color: var(--lamp); display: grid; place-items: center; font-size: 13px; padding-top: 2px; }
+
+.setup { display: flex; flex-direction: column; gap: 18px; }
+.simple { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
+.simple .diff { grid-column: 1 / -1; }
+.simple > * { min-width: 0; }
+.gamepick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; border: 0; margin: 0; padding: 0; }
+.gamepick input { position: absolute; opacity: 0; pointer-events: none; }
+.gamepick label { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--rope); border-radius: 14px; background: var(--deep); cursor: pointer; font-family: var(--f-display); font-size: 22px; color: var(--mist); }
+.gamepick label svg { height: 40px; width: auto; flex: none; }
+.gamepick label:hover { border-color: var(--mist); color: var(--moon); }
+.gamepick input:checked + label { border-color: var(--lamp); color: var(--lamp); background: color-mix(in srgb, var(--lamp) 12%, var(--deep)); box-shadow: inset 0 0 0 1px var(--lamp); }
+.gamepick input:focus-visible + label { outline: 2px solid var(--lamp); outline-offset: 2px; }
+.simple.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.diff { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.diff input { position: absolute; opacity: 0; pointer-events: none; }
+.diff label { display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 14px 12px 12px; border: 1px solid var(--rope); border-radius: 14px; background: var(--deep); cursor: pointer; min-height: 96px; }
+.diff label b { font-family: var(--f-display); font-weight: 400; font-size: 24px; color: var(--moon); line-height: 1; }
+.diff label span { font-size: 13.5px; color: var(--mist); line-height: 1.35; }
+.diff label:hover { border-color: var(--mist); }
+.diff input:checked + label { border-color: var(--lamp); background: color-mix(in srgb, var(--lamp) 12%, var(--deep)); box-shadow: inset 0 0 0 1px var(--lamp); }
+.diff input:checked + label b { color: var(--lamp); }
+.diff input:focus-visible + label { outline: 2px solid var(--lamp); outline-offset: 2px; }
+.tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 118px; padding: 10px; border: 1px solid var(--rope); border-radius: 14px; background: var(--deep); color: var(--moon); cursor: pointer; font: inherit; }
+.tile:hover { border-color: var(--lamp); }
+.tile .pic { height: 72px; display: grid; place-items: center; transition: transform .25s; }
+.tile.flip .pic { transform: rotateY(90deg); }
+.tile .glyph { font-family: var(--f-music); font-size: 56px; line-height: 1; }
+.tile .glyph.stack { display: flex; flex-direction: column; font-size: 30px; line-height: .95; }
+.tile .glyph.stack span:last-child { margin-top: -2px; }
+.tile svg { width: 76px; height: 48px; }
+.tile svg.clefpic { width: auto; height: 72px; overflow: visible; }
+.tile svg.icon { width: 52px; height: 52px; fill: none; stroke: var(--lamp); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.tile .cap { font-weight: 700; font-size: 15px; }
+.tile .sub { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--mist); }
+.adv-btn { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; font: 600 13px var(--f-ui); letter-spacing: .1em; text-transform: uppercase; color: var(--mist); background: none; border: 1px solid var(--rope); border-radius: 999px; padding: 8px 14px 6px; cursor: pointer; }
+.adv-btn:hover { color: var(--moon); border-color: var(--mist); }
+.adv-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s; margin-top: -2px; }
+.adv-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
+.advanced { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 18px 32px; border-top: 1px solid var(--rope); padding-top: 16px; }
+.custom-note { font-size: 13px; color: var(--mist); margin: -8px 0 0; }
+@media (max-width: 760px) { .advanced { grid-template-columns: minmax(0, 1fr); } }
+.setup-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.setup .ranges { justify-content: flex-start; }
+.small { font-size: 13px; margin: 0 0 8px; }
+.launch { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; border-top: 1px solid var(--rope); padding-top: 16px; }
+.launch .best-note { margin-left: auto; color: var(--mist); font-size: 14px; font-variant-numeric: tabular-nums; }
+.launch .best-note b { color: var(--lamp); font-size: 18px; }
+.btn.big { font-size: 17px; padding: 17px 36px 14px; box-shadow: 0 0 34px -10px var(--lamp); }
+@media (max-width: 760px) { .launch .best-note { margin-left: 0; } }
+
+.stage { view-transition-name: hl-stage; }
+#sound-btn { view-transition-name: hl-sound; }
+.row.center { justify-content: center; }
+.top-actions { display: flex; gap: 8px; align-items: center; }
+body[data-view="game"] #board-btn { display: none; }
+
+.board { display: flex; flex-direction: column; gap: 18px; }
+.board-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 10px; }
+.board-head h2 { font-family: var(--f-display); font-weight: 400; font-size: clamp(28px, 4.5vw, 40px); margin: 0; }
+.filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px 20px; }
+.filters .seg label { font-size: 13px; padding: 7px 10px 5px; }
+.board-summary { margin: 0; font-size: 15px; color: var(--mist); }
+.board-summary b { color: var(--moon); }
+.ranks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ranks li { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto auto; align-items: center; gap: 4px 16px; padding: 12px 16px 10px; border: 1px solid var(--rope); border-radius: 12px; background: var(--deep); }
+.ranks .rank { font-family: var(--f-display); font-size: 26px; line-height: 1; color: var(--mist); text-align: center; }
+.ranks li.r1 .rank { color: #ffd166; } .ranks li.r2 .rank { color: #d9e1e6; } .ranks li.r3 .rank { color: #e0a36b; }
+.ranks li.r1 { border-color: color-mix(in srgb, #ffd166 60%, var(--rope)); background: color-mix(in srgb, #ffd166 8%, var(--deep)); }
+.ranks li.mine { box-shadow: inset 0 0 0 2px var(--safe); }
+.ranks .who { min-width: 0; }
+.ranks .who .nm { display: block; font-size: 19px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ranks .who .tags { display: block; font-size: 12px; color: var(--mist); margin-top: 2px; }
+.ranks .detail { font-size: 13px; color: var(--mist); text-align: right; font-variant-numeric: tabular-nums; line-height: 1.35; }
+.ranks .score { font-size: 26px; font-weight: 700; color: var(--lamp); text-align: right; font-variant-numeric: tabular-nums; min-width: 4ch; }
+.ranks .rm { grid-column: 1 / -1; justify-self: end; font: 600 11px var(--f-ui); letter-spacing: .1em; text-transform: uppercase; color: var(--mist); background: none; border: 0; cursor: pointer; padding: 0; }
+.ranks .rm:hover { color: var(--flare); }
+.board-empty { border: 1px dashed var(--rope); border-radius: 12px; padding: 22px; text-align: center; color: var(--mist); }
+.board-empty b { display: block; color: var(--moon); font-size: 17px; margin-bottom: 4px; }
+@media (max-width: 560px) { .ranks li { grid-template-columns: 40px minmax(0, 1fr) auto; } .ranks .detail { grid-column: 2 / -1; text-align: left; order: 5; } }
+
+.save { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 14px; border: 1px solid var(--rope); border-radius: 12px; background: var(--deep); }
+.save label { font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--lamp); }
+.save input { font: 600 16px var(--f-ui); color: var(--moon); background: var(--tide); border: 1px solid var(--rope); border-radius: 8px; padding: 10px 12px 8px; min-width: 0; flex: 1 1 180px; max-width: 280px; }
+.save input:focus { outline: 2px solid var(--lamp); outline-offset: 1px; }
+.save .msg { font-size: 14px; color: var(--mist); flex-basis: 100%; }
+.save .msg.ok { color: var(--safe); }
+.save .msg.err { color: var(--flare); }
+.ov-keys { font-size: 12px; color: var(--mist); margin: 0; }
+::view-transition-group(*) { animation-duration: .75s; animation-timing-function: cubic-bezier(.3, .7, .1, 1); }
+::view-transition-old(root) { animation: .3s ease both hl-out; }
+::view-transition-new(root) { animation: .5s .25s ease both hl-in; }
+@keyframes hl-out { to { opacity: 0; transform: translateY(14px); } }
+@keyframes hl-in { from { opacity: 0; transform: translateY(18px); } }
+@media (prefers-reduced-motion: reduce) { ::view-transition-group(*), ::view-transition-old(root), ::view-transition-new(root) { animation: none; } }
+
+.hud { display: flex; flex-wrap: wrap; gap: 6px 20px; align-items: end; font-variant-numeric: tabular-nums; }
+.hud .cell { display: flex; flex-direction: column; min-width: 52px; }
+.hud .k { font-size: 11px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--mist); }
+.hud .v { font-size: 24px; font-weight: 700; line-height: 1.15; }
+.hud .v.lamp { color: var(--lamp); }
+.lanterns { display: flex; gap: 7px; padding-top: 5px; }
+.lanterns i { width: 12px; height: 17px; border-radius: 4px 4px 6px 6px; background: var(--lamp); box-shadow: 0 0 12px -1px var(--lamp); }
+.lanterns i.off { background: var(--rope); box-shadow: none; }
+.lanterns i.dim { background: linear-gradient(to top, var(--lamp) 50%, var(--rope) 50%); box-shadow: 0 0 8px -3px var(--lamp); }
+.lanterns i.flick { animation: flick .5s ease; }
+@keyframes flick { 0%, 100% { transform: none; } 30% { transform: scale(1.35); } }
+.iconbtn { font: 600 12px var(--f-ui); letter-spacing: .1em; text-transform: uppercase; color: var(--mist); background: var(--tide); border: 1px solid var(--rope); border-radius: 999px; padding: 8px 12px 6px; cursor: pointer; }
+.iconbtn:hover { color: var(--moon); }
+
+.stage { position: relative; border: 1px solid var(--rope); border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #13283a 0%, #0f2130 60%, #0b1822 100%); }
+canvas { display: block; width: 100%; }
+.overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 12px 16px; background: color-mix(in srgb, var(--deep) 84%, transparent); }
+.overlay h2 { font-family: var(--f-display); font-weight: 400; font-size: clamp(22px, 3.6vw, 32px); margin: 0; text-wrap: balance; }
+.overlay p { margin: 0; color: var(--mist); max-width: 48ch; text-wrap: balance; }
+.overlay .tag { font-size: 12px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--lamp); }
+
+.ov-inner { display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 100%; }
+.ranges { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 14px; }
+.rangepick { display: grid; grid-template-columns: auto auto auto; align-items: center; gap: 2px 6px; background: color-mix(in srgb, var(--deep) 70%, transparent); border: 1px solid var(--rope); border-radius: 12px; padding: 6px 8px 8px; }
+.rangepick .rlabel { grid-column: 1 / -1; font-size: 11px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--mist); }
+.rangepick .rcap { grid-column: 1 / -1; font-size: 13px; font-weight: 600; color: var(--moon); font-variant-numeric: tabular-nums; }
+.rangepick .rcap span { color: var(--mist); font-weight: 400; }
+.rangepick svg.mini { display: block; width: 180px; height: 116px; color: var(--moon); }
+.arrows { display: flex; flex-direction: column; gap: 4px; }
+.arr { width: 32px; height: 32px; display: grid; place-items: center; background: var(--tide); color: var(--moon); border: 1px solid var(--rope); border-radius: 8px; cursor: pointer; padding: 0; }
+.arr:hover:not(:disabled) { border-color: var(--lamp); color: var(--lamp); }
+.arr:disabled { opacity: .3; cursor: default; }
+.arr svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.btn { font: 700 14px var(--f-ui); letter-spacing: .14em; text-transform: uppercase; color: var(--deep); background: var(--lamp); border: 0; border-radius: 999px; padding: 13px 26px 10px; cursor: pointer; transition: transform .08s, box-shadow .2s; }
+.btn:hover { box-shadow: 0 0 26px -6px var(--lamp); }
+.btn:active { transform: translateY(1px); }
+.btn.ghost { background: transparent; color: var(--moon); border: 1px solid var(--rope); }
+.btn.ghost:hover { box-shadow: none; border-color: var(--mist); }
+:focus-visible { outline: 2px solid var(--lamp); outline-offset: 2px; }
+
+.pad { display: flex; flex-direction: column; gap: 8px; }
+.keys { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.keys button { height: 64px; font: 700 26px var(--f-ui); color: var(--moon); background: var(--tide); border: 1px solid var(--rope); border-radius: 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; line-height: 1; padding-top: 4px; touch-action: manipulation; user-select: none; -webkit-user-select: none; transition: background .15s; }
+.keys .col { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.keys .col .gap { height: 28px; }
+.keys.ivl .col .gap { height: 38px; }
+.keys.ivl button.acc { height: 38px; font-size: 16px; color: var(--moon); }
+.keys .col .lab { height: 64px; display: flex; align-items: center; justify-content: center; font: 700 22px var(--f-ui); color: var(--mist); border: 1px dashed var(--rope); border-radius: 10px; }
+.keychips { display: flex; flex-direction: column; gap: 6px; }
+.keyrow { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.keymid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.keymid .kc { grid-column: 4; }
+.kc { border: 1px solid var(--rope); border-radius: 10px; background: var(--deep); padding: 5px 2px 4px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 0; color: var(--mist); font: 600 13px var(--f-ui); }
+.kc:hover { border-color: var(--mist); }
+.kc[aria-pressed="true"] { border-color: var(--lamp); color: var(--moon); background: color-mix(in srgb, var(--lamp) 12%, var(--deep)); }
+.kc svg { width: 100%; max-width: 62px; height: 28px; color: currentColor; }
+.presets { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.presets button { font: 600 12px var(--f-ui); color: var(--mist); background: none; border: 1px solid var(--rope); border-radius: 999px; padding: 6px 10px 4px; cursor: pointer; }
+.presets button:hover { color: var(--moon); border-color: var(--lamp); }
+.keys button.acc small { font-size: 10px; margin: 0 0 0 5px; letter-spacing: .04em; }
+.keys button.acc { flex-direction: row; gap: 0; }
+.keys button.acc { height: 28px; font-size: 14px; font-weight: 600; color: var(--mist); border-radius: 8px; padding-top: 3px; }
+.keys button small { font-size: 10px; font-weight: 600; letter-spacing: .12em; color: var(--mist); }
+.keys button:hover { background: var(--tide-2); }
+.keys button.hit { border-color: var(--lamp); color: var(--lamp); background: color-mix(in srgb, var(--lamp) 12%, var(--tide)); }
+.keys button.miss { border-color: var(--flare); color: var(--flare); }
+.piano-wrap { overflow-x: auto; overscroll-behavior-x: contain; border-radius: 10px; border: 1px solid var(--rope); scrollbar-width: thin; }
+.piano { position: relative; height: 160px; display: flex; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+.piano .wk { flex: 1 1 0; min-width: 0; position: relative; background: var(--moon); border-right: 1px solid #a9b8bf; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 8px; font: 600 12px var(--f-ui); color: #3a4f5c; cursor: pointer; transition: background .12s; }
+.piano .wk:last-child { border-right: 0; }
+.piano .wk:hover { background: #fffaf0; }
+.piano .wk .mc { position: absolute; bottom: 28px; width: 7px; height: 7px; border-radius: 50%; background: var(--rope); }
+.piano .bk { position: absolute; top: 0; height: 60%; background: var(--deep); border: 1px solid var(--rope); border-top: 0; border-radius: 0 0 5px 5px; cursor: pointer; z-index: 2; transition: background .12s; }
+.piano .bk:hover { background: var(--tide-2); }
+.piano .hit { background: var(--lamp) !important; }
+.piano .miss { background: var(--flare) !important; }
+.piano .show { background: var(--safe) !important; }
+@media (max-width: 520px) { .piano { height: 130px; } }
+.hint { text-align: center; font-size: 13px; color: var(--mist); margin: 0; }
+kbd { font: 700 11px var(--f-ui); border: 1px solid var(--rope); border-bottom-width: 2px; border-radius: 4px; padding: 2px 5px 0; color: var(--moon); }
+
+.card { background: var(--tide); border: 1px solid var(--rope); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.card h3 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 21px; }
+.card-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; }
+.card-head .note { color: var(--mist); font-size: 13px; }
+
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+legend { font-size: 12px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--lamp); padding: 0; margin-bottom: 8px; }
+.seg { display: flex; flex-wrap: wrap; gap: 4px; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label { flex: 1 1 auto; text-align: center; font-weight: 600; font-size: 13px; padding: 8px 10px 6px; border: 1px solid var(--rope); border-radius: 999px; cursor: pointer; color: var(--mist); background: var(--deep); white-space: nowrap; }
+.seg label:hover { color: var(--moon); }
+.seg input:checked + label { color: var(--deep); background: var(--moon); border-color: var(--moon); }
+.seg input:focus-visible + label { outline: 2px solid var(--lamp); outline-offset: 2px; }
+
+.results .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; font-variant-numeric: tabular-nums; }
+.results .stat { border-left: 2px solid var(--rope); padding-left: 10px; }
+.results .stat .k { font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--mist); }
+.results .stat .v { font-size: 28px; font-weight: 700; }
+.badge { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--deep); background: var(--safe); border-radius: 999px; padding: 4px 10px 2px; }
+.trouble { display: flex; flex-wrap: wrap; gap: 6px; }
+.trouble span { font-weight: 600; font-size: 15px; border: 1px solid color-mix(in srgb, var(--flare) 55%, var(--rope)); border-radius: 999px; padding: 6px 12px 4px; }
+.trouble span em { font-style: normal; color: var(--flare); font-size: 13px; margin-left: 6px; }
+.trouble .staffname { color: var(--mist); font-weight: 400; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
+/* welcome + who's playing (shared with the Rhythm Trainer and Scale Quest) */
+.iconbtn.who { color: var(--lamp); border-color: color-mix(in srgb, var(--lamp) 50%, var(--rope)); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.welcome { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; overflow: auto; background: radial-gradient(ellipse at 20% 10%, #183345 0%, var(--deep) 60%), var(--deep); }
+.wcard { width: min(480px, 100%); display: flex; flex-direction: column; gap: 14px; padding: 26px 24px; background: var(--tide); border: 1px solid var(--rope); border-radius: 16px; box-shadow: 0 0 60px -20px var(--lamp); }
+.wcard h2 { font-family: var(--f-display); font-weight: 400; font-size: 40px; line-height: .95; margin: 0; }
+.wcard .eyebrow { margin-bottom: -6px; }
+.wcard label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--lamp); }
+.wcard input[type="text"] { font: 600 17px var(--f-ui); color: var(--moon); background: var(--deep); border: 1px solid var(--rope); border-radius: 10px; padding: 12px 12px 10px; width: 100%; }
+.wcard input[type="text"]:focus { outline: 2px solid var(--lamp); outline-offset: 1px; }
+.wcard input:disabled { opacity: .4; }
+.wrow { display: grid; grid-template-columns: 1fr 120px; gap: 12px; }
+.wsolo { flex-direction: row !important; align-items: center; gap: 10px !important; font: 600 15px var(--f-ui) !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--moon) !important; cursor: pointer; }
+.wsolo input { width: 20px; height: 20px; accent-color: var(--lamp); }
+.werr { margin: 0; min-height: 20px; color: var(--flare); font-size: 14px; }
+.wnote { margin: 0; color: var(--mist); font-size: 13px; text-align: center; }
+.scope { margin-bottom: -4px; }
+.save .who-line { font-size: 15px; color: var(--moon); }
+.muted { color: var(--mist); margin: 0; }
+
+@media (max-width: 520px) {
+  .keys button { height: 56px; font-size: 22px; }
+  .hud .v { font-size: 20px; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="eyebrow">A note-reading game</div>
+      <h1 id="title">Tidal Tones</h1>
+    </div>
+    <div class="hud game-only">
+      <div class="cell"><span class="k">Score</span><span class="v lamp" id="hud-score">0</span></div>
+      <div class="cell"><span class="k" id="hud-level-k">Level</span><span class="v" id="hud-level">1</span></div>
+      <div class="cell"><span class="k">Streak</span><span class="v" id="hud-streak">0</span></div>
+      <div class="cell" id="hud-lamp-cell"><span class="k">Lanterns</span><span class="lanterns" id="hud-lamps"><i></i><i></i><i></i></span></div>
+      <div class="cell"><span class="k">Best</span><span class="v" id="hud-best">0</span></div>
+    </div>
+    <div class="top-actions">
+      <button class="iconbtn who" id="who-btn" type="button" title="Switch student or class">👤 Sign in</button>
+      <button class="iconbtn" id="board-btn" type="button">Leaderboard</button>
+      <button class="iconbtn" id="sound-btn" type="button" aria-pressed="true">Sound on</button>
+    </div>
+  </header>
+
+  <section class="hero splash-only">
+    <p class="tagline">Boats are sailing for the rocks. Name the note on each one and the lighthouse guides it safely into the harbor.</p>
+    <ol class="howto">
+      <li><b>1</b>The beam finds the next boat.</li>
+      <li><b>2</b>Name its note with a letter key or the pad.</li>
+      <li><b>3</b>Every 8 boats home starts a faster level.</li>
+    </ol>
+  </section>
+
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="Staff at sea with notes sailing toward the lighthouse"></canvas>
+    <div class="overlay" id="overlay" hidden>
+      <div class="ov-inner">
+        <div class="tag" id="ov-tag"></div>
+        <h2 id="ov-title"></h2>
+        <p id="ov-text"></p>
+        <div class="row center">
+          <button class="btn" id="ov-btn" type="button"></button>
+          <button class="btn ghost" id="ov-btn2" type="button"></button>
+        </div>
+        <p class="ov-keys" id="ov-keys"></p>
+      </div>
+    </div>
+  </div>
+
+  <form class="card setup splash-only" id="settings" onsubmit="return false">
+    <h3>Chart your course</h3>
+    <fieldset class="gamepick">
+      <legend class="sr-only">Game</legend>
+      <input type="radio" name="gameType" id="gametype-notes" value="notes"><label for="gametype-notes"><span id="gp-notes-pic"></span>Note reading</label>
+      <input type="radio" name="gameType" id="gametype-intervals" value="intervals"><label for="gametype-intervals"><span id="gp-ivl-pic"></span>Intervals</label>
+    </fieldset>
+    <div class="simple" id="simple">
+      <fieldset class="diff" id="diff">
+        <legend class="sr-only">Difficulty</legend>
+        <input type="radio" name="level" id="level-easy" value="easy"><label for="level-easy"><b>Easy</b><span id="desc-easy"></span></label>
+        <input type="radio" name="level" id="level-medium" value="medium"><label for="level-medium"><b>Medium</b><span id="desc-medium"></span></label>
+        <input type="radio" name="level" id="level-hard" value="hard"><label for="level-hard"><b>Hard</b><span id="desc-hard"></span></label>
+      </fieldset>
+      <button type="button" class="tile" id="mode-tile" aria-label="Switch between levels, speed round and practice">
+        <span class="pic" id="mode-pic"></span>
+        <span class="cap" id="mode-cap"></span>
+        <span class="sub">Tap to switch</span>
+      </button>
+      <button type="button" class="tile" id="game-tile" aria-label="Switch between note names and piano">
+        <span class="pic" id="game-pic"></span>
+        <span class="cap" id="game-cap"></span>
+        <span class="sub">Tap to switch</span>
+      </button>
+      <button type="button" class="tile" id="clef-tile" aria-label="Switch between treble, bass and grand staff">
+        <span class="pic" id="clef-pic"></span>
+        <span class="cap" id="clef-cap"></span>
+        <span class="sub">Tap to switch</span>
+      </button>
+    </div>
+    <p class="custom-note" id="custom-note" hidden>Custom settings from Advanced options. Pick Easy, Medium or Hard to reset them.</p>
+    <button type="button" class="adv-btn" id="adv-btn" aria-expanded="false" aria-controls="advanced">Advanced options <svg viewBox="0 0 20 20"><path d="M5 7.5l5 5 5-5"/></svg></button>
+    <div class="advanced" id="advanced" hidden>
+    <div class="setup-col">
+      <fieldset>
+        <legend>Game mode</legend>
+        <div class="seg">
+          <input type="radio" name="mode" id="mode-arcade" value="arcade" checked><label for="mode-arcade">Levels</label>
+          <input type="radio" name="mode" id="mode-sprint" value="sprint"><label for="mode-sprint">Speed round</label>
+          <input type="radio" name="mode" id="mode-practice" value="practice"><label for="mode-practice">Practice</label>
+        </div>
+        <p class="muted small" id="mode-desc"></p>
+      </fieldset>
+      <fieldset>
+        <legend>Clef</legend>
+        <div class="seg">
+          <input type="radio" name="clef" id="clef-treble" value="treble" checked><label for="clef-treble">Treble</label>
+          <input type="radio" name="clef" id="clef-bass" value="bass"><label for="clef-bass">Bass</label>
+          <input type="radio" name="clef" id="clef-alto" value="alto"><label for="clef-alto">Alto</label>
+          <input type="radio" name="clef" id="clef-grand" value="grand"><label for="clef-grand">Grand</label>
+        </div>
+      </fieldset>
+      <fieldset class="ivl-only">
+        <legend>Key signatures</legend>
+        <div class="presets" id="key-presets">
+          <button type="button" data-p="all">All</button>
+          <button type="button" data-p="2">Up to 2 ♯/♭</button>
+          <button type="button" data-p="4">Up to 4 ♯/♭</button>
+          <button type="button" data-p="s">Sharp keys</button>
+          <button type="button" data-p="f">Flat keys</button>
+        </div>
+        <div class="keychips" id="keychips"></div>
+        <p class="muted small" id="key-count" style="margin-top:8px"></p>
+      </fieldset>
+      <fieldset class="ivl-only">
+        <legend>Interval types</legend>
+        <div class="seg">
+          <input type="radio" name="ivl" id="ivl-easy" value="easy"><label for="ivl-easy">Numbers only</label>
+          <input type="radio" name="ivl" id="ivl-medium" value="medium" checked><label for="ivl-medium">Major, minor, perfect</label>
+          <input type="radio" name="ivl" id="ivl-hard" value="hard"><label for="ivl-hard">Every quality</label>
+        </div>
+      </fieldset>
+      <fieldset class="notes-only" id="range-field">
+        <legend>Range</legend>
+        <p class="muted small">Left arrows move the lowest note. Right arrows move the highest.</p>
+        <div class="ranges" id="ranges"></div>
+      </fieldset>
+    </div>
+    <div class="setup-col">
+      <fieldset class="notes-only">
+        <legend>Answer with</legend>
+        <div class="seg">
+          <input type="radio" name="answer" id="answer-names" value="names" checked><label for="answer-names">Note names</label>
+          <input type="radio" name="answer" id="answer-any" value="any"><label for="answer-any">Piano · any octave</label>
+          <input type="radio" name="answer" id="answer-exact" value="exact"><label for="answer-exact">Piano · exact key</label>
+        </div>
+        <p class="muted small" id="answer-desc" style="margin-top:8px"></p>
+      </fieldset>
+      <fieldset id="labels-field" hidden>
+        <legend>Letter names on the piano keys</legend>
+        <div class="seg">
+          <input type="radio" name="labels" id="labels-c" value="c" checked><label for="labels-c">Only on C</label>
+          <input type="radio" name="labels" id="labels-all" value="all"><label for="labels-all">On every key</label>
+        </div>
+      </fieldset>
+      <fieldset class="notes-only">
+        <legend>Notes</legend>
+        <div class="seg">
+          <input type="radio" name="filter" id="filter-all" value="all" checked><label for="filter-all">Lines &amp; spaces</label>
+          <input type="radio" name="filter" id="filter-lines" value="lines"><label for="filter-lines">Lines</label>
+          <input type="radio" name="filter" id="filter-spaces" value="spaces"><label for="filter-spaces">Spaces</label>
+        </div>
+      </fieldset>
+      <fieldset class="notes-only">
+        <legend>Accidentals</legend>
+        <div class="seg">
+          <input type="radio" name="acc" id="acc-off" value="off" checked><label for="acc-off">Naturals only</label>
+          <input type="radio" name="acc" id="acc-on" value="on"><label for="acc-on">Add ♯ and ♭</label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Note names</legend>
+        <div class="seg">
+          <input type="radio" name="names" id="names-letters" value="letters" checked><label for="names-letters">C D E</label>
+          <input type="radio" name="names" id="names-solfege" value="solfege"><label for="names-solfege">Do Re Mi</label>
+        </div>
+      </fieldset>
+    </div>
+    </div>
+    <div class="launch">
+      <button class="btn big" id="start-btn" type="button">Light the lamp</button>
+      <span class="muted">or press <kbd>Space</kbd></span>
+      <span class="best-note">Best with these settings: <b id="setup-best">0</b></span>
+    </div>
+  </form>
+
+  <div class="pad game-only">
+    <div class="keys" id="keys"></div>
+    <div class="piano-wrap" id="piano-wrap" hidden><div class="piano" id="piano"></div></div>
+    <p class="hint" id="hint"></p>
+  </div>
+
+  <section class="card results game-only" id="results" hidden>
+    <div class="card-head">
+      <h3 id="res-title">Harbor log</h3>
+      <span id="res-badge" class="badge" hidden>New best</span>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="k">Score</div><div class="v" id="res-score">0</div></div>
+      <div class="stat"><div class="k">Boats home</div><div class="v" id="res-hits">0</div></div>
+      <div class="stat"><div class="k">Accuracy</div><div class="v" id="res-acc">0%</div></div>
+      <div class="stat"><div class="k">Notes / min</div><div class="v" id="res-npm">0</div></div>
+      <div class="stat" id="res-level-cell"><div class="k">Level reached</div><div class="v" id="res-level">1</div></div>
+      <div class="stat"><div class="k">Best streak</div><div class="v" id="res-streak">0</div></div>
+    </div>
+    <div>
+      <p class="muted" style="margin-bottom:8px">Trouble notes</p>
+      <div class="trouble" id="trouble"></div>
+    </div>
+    <div class="save" id="save-box" hidden>
+      <span class="who-line" id="save-who"></span>
+      <button class="btn" id="save-btn" type="button">Save to leaderboard</button>
+      <span class="msg" id="save-msg"></span>
+    </div>
+    <div class="row">
+      <button class="btn" id="res-again" type="button">Play again</button>
+      <button class="btn ghost" id="res-board" type="button">Leaderboard</button>
+      <button class="btn ghost" id="res-drill" type="button">Drill trouble notes</button>
+      <button class="btn ghost" id="res-home" type="button">Change settings</button>
+    </div>
+  </section>
+
+  <section class="card board board-only" id="board">
+    <div class="board-head">
+      <h2>Leaderboard</h2>
+      <button class="btn ghost" id="board-back" type="button">Back to harbor</button>
+    </div>
+    <fieldset class="scope" id="board-scope">
+      <legend>Leaderboard</legend>
+      <div class="seg" id="scope-seg"></div>
+    </fieldset>
+    <form class="filters" id="board-filters" onsubmit="return false">
+      <fieldset>
+        <legend>Game mode</legend>
+        <div class="seg">
+          <input type="radio" name="bmode" id="bmode-arcade" value="arcade" checked><label for="bmode-arcade">Levels</label>
+          <input type="radio" name="bmode" id="bmode-sprint" value="sprint"><label for="bmode-sprint">Speed round</label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Difficulty</legend>
+        <div class="seg">
+          <input type="radio" name="bdiff" id="bdiff-all" value="all" checked><label for="bdiff-all">All</label>
+          <input type="radio" name="bdiff" id="bdiff-easy" value="easy"><label for="bdiff-easy">Easy</label>
+          <input type="radio" name="bdiff" id="bdiff-medium" value="medium"><label for="bdiff-medium">Medium</label>
+          <input type="radio" name="bdiff" id="bdiff-hard" value="hard"><label for="bdiff-hard">Hard</label>
+          <input type="radio" name="bdiff" id="bdiff-custom" value="custom"><label for="bdiff-custom">Custom</label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Clef</legend>
+        <div class="seg">
+          <input type="radio" name="bclef" id="bclef-all" value="all" checked><label for="bclef-all">All</label>
+          <input type="radio" name="bclef" id="bclef-treble" value="treble"><label for="bclef-treble">Treble</label>
+          <input type="radio" name="bclef" id="bclef-bass" value="bass"><label for="bclef-bass">Bass</label>
+          <input type="radio" name="bclef" id="bclef-alto" value="alto"><label for="bclef-alto">Alto</label>
+          <input type="radio" name="bclef" id="bclef-grand" value="grand"><label for="bclef-grand">Grand</label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Game</legend>
+        <div class="seg">
+          <input type="radio" name="bgame" id="bgame-all" value="all" checked><label for="bgame-all">All</label>
+          <input type="radio" name="bgame" id="bgame-names" value="names"><label for="bgame-names">Note names</label>
+          <input type="radio" name="bgame" id="bgame-any" value="any"><label for="bgame-any">Piano</label>
+          <input type="radio" name="bgame" id="bgame-exact" value="exact"><label for="bgame-exact">Piano exact</label>
+          <input type="radio" name="bgame" id="bgame-intervals" value="intervals"><label for="bgame-intervals">Intervals</label>
+        </div>
+      </fieldset>
+    </form>
+    <p class="board-summary" id="board-summary"></p>
+    <ol class="ranks" id="ranks"></ol>
+    <div class="board-empty" id="board-empty" hidden></div>
+  </section>
+</div>
+
+<div class="welcome" id="welcome" hidden role="dialog" aria-modal="true" aria-labelledby="w-title">
+  <form class="wcard" id="w-form" autocomplete="off">
+    <div class="eyebrow">Welcome aboard</div>
+    <h2 id="w-title">Tidal Tones</h2>
+    <p class="muted">Tell us who you are. Your name goes on the leaderboards.</p>
+    <div class="wrow">
+      <label for="w-first">First name<input type="text" id="w-first" maxlength="15" autocapitalize="words" spellcheck="false"></label>
+      <label for="w-init">Last initial<input type="text" id="w-init" maxlength="1" autocapitalize="characters" spellcheck="false"></label>
+    </div>
+    <label for="w-code">Class code<input type="text" id="w-code" maxlength="7" autocapitalize="characters" spellcheck="false" placeholder="From your teacher"></label>
+    <label class="wsolo" for="w-solo"><input type="checkbox" id="w-solo"> I'm not in a class (World leaderboard only)</label>
+    <p class="werr" id="w-error" role="alert"></p>
+    <button class="btn big" id="w-go" type="submit">Set sail</button>
+    <button class="btn ghost" id="w-guest" type="button">Play as guest</button>
+    <p class="wnote">Guests' scores aren't saved. One sign-in works for the Rhythm Trainer, Scale Quest and Tidal Tones.</p>
+  </form>
+</div>
+
+<script>
+(() => {
+const LETTERS = 'CDEFGAB', SOLF = ['Do','Re','Mi','Fa','Sol','La','Ti'], SEMI = [0,2,4,5,7,9,11];
+const BOTTOM = { treble: 30, bass: 18, alto: 24 };           // diatonic number of the bottom line (C4 = 28)
+const GLYPH  = { treble: '\u{1D11E}', bass: '\u{1D122}', alto: '\u{1D121}' };
+const CLEF_LIFT = { treble: 0, bass: .422, alto: 0 };        // staff spaces: Noto Music's bass clef sits low, so its dots straddle the F line only after this lift
+const LEDGER = { treble: [-4, 14], bass: [-6, 12], alto: [-5, 13] };  // furthest the range can reach: the A below and the E above each staff
+const MIN_SPAN = 2;                                                   // the range always covers at least three notes
+// Accidentals are limited to the five black keys, which is also where chromatic solfège has syllables
+const SHARP_OK = [1, 1, 0, 1, 1, 1, 0];                         // C D F G A can be sharp
+const FLAT_OK  = [0, 1, 1, 0, 1, 1, 1];                         // D E G A B can be flat
+const SOLF_SHARP = ['Di', 'Ri', '', 'Fi', 'Si', 'Li', ''];
+const SOLF_FLAT  = ['', 'Ra', 'Me', '', 'Se', 'Le', 'Te'];
+/* ---------- intervals: major keys, key signatures, interval table ---------- */
+const MAJOR = [['Cb',0,-1,-7],['Gb',4,-1,-6],['Db',1,-1,-5],['Ab',5,-1,-4],['Eb',2,-1,-3],['Bb',6,-1,-2],['F',3,0,-1],['C',0,0,0],['G',4,0,1],['D',1,0,2],['A',5,0,3],['E',2,0,4],['B',6,0,5],['F#',3,1,6],['C#',0,1,7]]
+  .map(([id, li, acc, sig]) => ({ id, li, acc, sig }));
+const KEY_BY_ID = Object.fromEntries(MAJOR.map(k => [k.id, k]));
+const SHARP_ORDER = [3, 0, 4, 1, 5, 2, 6], FLAT_ORDER = [6, 2, 5, 1, 4, 0, 3];
+const SIG_POS = { sharp: [8, 5, 9, 6, 3, 7, 4], flat: [4, 7, 3, 6, 2, 5, 1] };       // treble staff positions
+const SIG_SHIFT = { treble: 0, bass: -2, alto: -1 };
+const KEY_PRESET = { easy: ['C', 'G', 'F'], medium: MAJOR.filter(k => Math.abs(k.sig) <= 3).map(k => k.id), hard: MAJOR.map(k => k.id) };
+const keyAccFor = (key, li) => key.sig > 0 ? (SHARP_ORDER.slice(0, key.sig).includes(li) ? 1 : 0) : key.sig < 0 ? (FLAT_ORDER.slice(0, -key.sig).includes(li) ? -1 : 0) : 0;
+// tier 1 = in the major scale, 2 = lowered (minor), 3 = augmented / diminished
+const IVLS = [['M2',2,2,1],['m2',2,1,2],['A2',2,3,3],['d2',2,0,3],['M3',3,4,1],['m3',3,3,2],['A3',3,5,3],['d3',3,2,3],['P4',4,5,1],['A4',4,6,3],['d4',4,4,3],['P5',5,7,1],['A5',5,8,3],['d5',5,6,3],['M6',6,9,1],['m6',6,8,2],['A6',6,10,3],['d6',6,7,3],['M7',7,11,1],['m7',7,10,2],['A7',7,12,3],['d7',7,9,3],['P8',8,12,1],['A8',8,13,3],['d8',8,11,3]]
+  .map(([id, n, semis, tier]) => ({ id, n, semis, tier }));
+const IVL_BY_ID = Object.fromEntries(IVLS.map(v => [v.id, v]));
+const ORD = { 2: '2nd', 3: '3rd', 4: '4th', 5: '5th', 6: '6th', 7: '7th', 8: 'Octave' };
+const SYL = { M2: 'Re', m2: 'Ra', A2: 'Ri', d2: 'Re𝄫', M3: 'Mi', m3: 'Me', A3: 'Mi♯', d3: 'Mi𝄫', P4: 'Fa', A4: 'Fi', d4: 'Fa♭', P5: 'Sol', A5: 'Si', d5: 'Se', M6: 'La', m6: 'Le', A6: 'Li', d6: 'La𝄫', M7: 'Ti', m7: 'Te', A7: 'Ti♯', d7: 'Ti𝄫', P8: 'Do', A8: 'Di', d8: 'Do♭' };
+const ANY_ACC = { '-2': '\u{1D12B}', '-1': '\u266D', '0': '\u266E', '1': '\u266F', '2': '\u{1D12A}' };
+const ACC_DROP = { '-2': .4, '-1': .4, '0': .53, '1': .52, '2': .52 };         // baseline offsets (staff spaces) from the measured glyphs
+const keyName = id => { const k = KEY_BY_ID[id]; return LETTERS[k.li] + ({ '-1': '♭', '0': '', '1': '♯' })[k.acc]; };
+const ACC_GLYPH = { '-1': '♭', '0': '', '1': '♯' };
+const ANSWER_DESC = {
+  names: 'Tap the note name on the pad, or type its letter.',
+  any: 'Click the matching key on the piano in any octave. Letter keys work too.',
+  exact: 'Click the exact key on the piano, in the right octave. Middle C has the dot.'
+};
+const MODE_DESC = {
+  arcade: 'Levels: three lanterns. A wrong answer dims a lantern, and a second wrong answer puts it out. A boat on the rocks puts out a whole lantern. Every 8 boats home starts a faster level.',
+  sprint: 'Speed round: 60 seconds, one boat at a time. The next boat appears the moment you name one, and faster answers score more.',
+  practice: 'Practice: calm water, no lanterns to lose, no game over. Press Esc to pause or quit.'
+};
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const C = { moon: css('--moon'), lamp: css('--lamp'), flare: css('--flare'), safe: css('--safe'), mist: css('--mist'), rope: css('--rope'), deep: css('--deep') };
+const F = { music: css('--f-music'), ui: css('--f-ui'), display: css('--f-display') };
+
+const DEFAULT_RANGE = () => ({ treble: [0, 8], bass: [0, 8], alto: [0, 8] });
+const settings = { clef: 'treble', range: DEFAULT_RANGE(), answer: 'names', labels: 'c', game: 'notes', ivl: 'easy', keys: ['C', 'G', 'F'], filter: 'all', acc: 'off', mode: 'arcade', names: 'letters', sound: true };
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+
+const $ = id => document.getElementById(id);
+const stage = $('stage'), cv = $('cv'), ctx = cv.getContext('2d');
+let W = 800, H = 240, g = 16, dpr = 1, stars = [];
+
+/* ---------- geometry ---------- */
+const grand = () => settings.clef === 'grand';
+let sky = 0;                                                  // extra sky above the staff on short screens
+function bottomY(staff) {
+  if (grand()) return sky + (staff === 'bass' ? 18 * g : 8 * g);
+  return sky + 8.5 * g;
+}
+const yOf = (staff, p) => bottomY(staff) - p * g / 2;
+const staffLeft = () => 3.1 * g;
+const isIvl = () => settings.game === 'intervals';
+const maxSig = () => isIvl() ? Math.max(0, ...settings.keys.map(id => Math.abs(KEY_BY_ID[id].sig))) : 0;
+const reefX = () => (7.8 + (maxSig() ? maxSig() * .95 + .4 : 0)) * g;                                  // the rocks: a boat that reaches here is lost
+const seaY = () => H - 2 * g;                                 // waterline of the band below the staff
+const lampPos = () => ({ x: 1.55 * g, y: sky + 1.6 * g });
+const spawnX = () => W + 2.5 * g;
+const endX = n => reefX() + ((n.kind === 'ivl' ? n.showAcc != null : n.acc) ? 2.4 : 1.3) * g;
+const noteX = n => spawnX() - n.u * (spawnX() - endX(n));
+
+function resize() {
+  const w = stage.clientWidth;
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  W = w;
+  g = Math.max(13, Math.min(18, w / 34));
+  const base = (grand() ? 25 : 15) * g;
+  H = Math.round(Math.max(base, 250));
+  sky = H - base;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  cv.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  stars = Array.from({ length: Math.round(W / 22) }, () => ({ x: Math.random() * W, y: Math.random() * H * .7, r: Math.random() * .9 + .3, tw: Math.random() * 6 }));
+}
+
+/* ---------- pitch helpers ---------- */
+const letterIdx = d => ((d % 7) + 7) % 7;
+const octave = d => Math.floor(d / 7);
+const midiOf = n => 12 * (octave(n.d) + 1) + SEMI[letterIdx(n.d)] + n.acc;
+const midiFreq = m => 440 * Math.pow(2, (m - 69) / 12);
+function freq(n) { return midiFreq(midiOf(n)); }
+const PC_NAMES = { letters: ['C', 'C♯/D♭', 'D', 'D♯/E♭', 'E', 'F', 'F♯/G♭', 'G', 'G♯/A♭', 'A', 'A♯/B♭', 'B'],
+                   solfege: ['Do', 'Di/Ra', 'Re', 'Ri/Me', 'Mi', 'Fa', 'Fi/Se', 'Sol', 'Si/Le', 'La', 'Li/Te', 'Ti'] };
+function midiName(m, withOct) { const nm = PC_NAMES[settings.names][((m % 12) + 12) % 12]; return withOct && settings.names === 'letters' ? nm + (Math.floor(m / 12) - 1) : nm; }
+function labelOf(n) {
+  if (n.kind !== 'ivl') return nameOf(n);
+  return (settings.ivl === 'easy' ? ORD[n.ivl.n] : n.ivl.id) + (settings.names === 'solfege' ? ' · ' + SYL[n.ivl.id] : '');
+}
+function nameOf(n, withOct = true) {
+  const li = letterIdx(n.d), a = ACC_GLYPH[n.acc];
+  if (settings.names === 'solfege') return n.acc === 1 ? (SOLF_SHARP[li] || SOLF[li] + a) : n.acc === -1 ? (SOLF_FLAT[li] || SOLF[li] + a) : SOLF[li];
+  return LETTERS[li] + a + (withOct ? octave(n.d) : '');
+}
+
+/* ---------- audio ---------- */
+let actx = null;
+function ensureAudio() { try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch {} }
+function tone(f, dur = .45, type = 'triangle', vol = .2, slideTo, attack = .012) {
+  if (!settings.sound || !actx) return;
+  const t = actx.currentTime, o = actx.createOscillator(), gn = actx.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+  gn.gain.setValueAtTime(.0001, t); gn.gain.exponentialRampToValueAtTime(vol, t + attack); gn.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  o.connect(gn).connect(actx.destination); o.start(t); o.stop(t + dur + .03);
+}
+function buoyBell(f) { tone(f, 1.1, 'sine', .22); tone(f * 2.76, .45, 'sine', .04); tone(f, .3, 'triangle', .07); }
+// half a light: a soft fizzle as the flame gutters
+function fizzle() {
+  if (!settings.sound || !actx) return;
+  noise(.35, 'bandpass', 900, .06);
+  tone(420, .35, 'sine', .06, 180);
+}
+// a whole lantern out: breaking glass (a bright crack of noise plus scattered high tinkles)
+function glassBreak() {
+  if (!settings.sound || !actx) return;
+  noise(.5, 'highpass', 3000, .22);
+  for (let i = 0; i < 9; i++) {
+    const f = 2400 + Math.random() * 4200, delay = .03 + Math.random() * .45;
+    setTimeout(() => tone(f, .12 + Math.random() * .2, 'triangle', .035 + Math.random() * .03, f * .96), delay * 1000);
+  }
+}
+function noise(dur, type, freq, vol) {
+  const t = actx.currentTime, len = Math.floor(actx.sampleRate * dur), buf = actx.createBuffer(1, len, actx.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+  const src = actx.createBufferSource(), f = actx.createBiquadFilter(), gn = actx.createGain();
+  src.buffer = buf; f.type = type; f.frequency.value = freq; gn.gain.setValueAtTime(vol, t); gn.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  src.connect(f).connect(gn).connect(actx.destination); src.start(t);
+}
+function foghorn() { tone(73, .9, 'sawtooth', .09, 70, .15); tone(110, .9, 'sine', .05, 108, .15); }
+function tideUp() { tone(523, .25, 'sine', .08); setTimeout(() => tone(784, .4, 'sine', .08), 140); }
+
+/* ---------- game state ---------- */
+const game = { running: false, paused: false, over: false };
+let notes = [], homeward = [], particles = [], floaters = [];
+let lampFlicker = 0, beam = { x: 0, y: 0, glow: 0 }, shake = 0, spawnT = 0, banner = null, lastPick = null, drill = null, demoT = 0, clock = 0;
+
+function candidates() {
+  if (drill) return drill;
+  const staves = grand() ? ['treble', 'bass'] : [settings.clef];
+  const all = [];
+  for (const s of staves) for (let p = settings.range[s][0]; p <= settings.range[s][1]; p++) all.push({ staff: s, p, acc: 0 });
+  const out = all.filter(c => {
+    const line = ((c.p % 2) + 2) % 2 === 0;
+    return settings.filter === 'lines' ? line : settings.filter === 'spaces' ? !line : true;
+  });
+  return out.length ? out : all;
+}
+let attractKey = 'C', drillIvls = null, lastIvl = null;
+const activeKey = () => KEY_BY_ID[(game.running && game.key) || attractKey] || KEY_BY_ID.C;
+function pickKey(avoid) {
+  const ks = settings.keys.filter(id => KEY_BY_ID[id]);
+  const pool = ks.length > 1 ? ks.filter(id => id !== avoid) : ks;
+  return pool[Math.floor(Math.random() * pool.length)] || 'C';
+}
+const ivlKey = v => settings.ivl === 'easy' ? 'n' + v.n : v.id;
+function allowedIvls() {
+  const max = settings.ivl === 'easy' ? 1 : settings.ivl === 'medium' ? 2 : 3;
+  let list = IVLS.filter(v => v.tier <= max);
+  if (drillIvls) { const d = list.filter(v => drillIvls.includes(ivlKey(v))); if (d.length) list = d; }
+  return list;
+}
+function makeInterval() {
+  const key = activeKey();
+  const st = grand() ? (Math.random() < .5 ? 'treble' : 'bass') : settings.clef;
+  const [lo, hi] = LEDGER[st];
+  let ps = [];
+  for (let p = lo; p <= hi - 7; p++) if (letterIdx(BOTTOM[st] + p) === key.li) ps.push(p);
+  const nice = ps.filter(p => p >= -2); if (nice.length) ps = nice;
+  const p = ps[Math.floor(Math.random() * ps.length)];
+  const d = BOTTOM[st] + p, tonicMidi = 12 * (octave(d) + 1) + SEMI[key.li] + key.acc;
+  const accFor = v => { const d2 = d + v.n - 1; return tonicMidi + v.semis - (12 * (octave(d2) + 1) + SEMI[letterIdx(d2)]); };
+  let list = allowedIvls().filter(v => Math.abs(accFor(v)) <= 2);
+  if (!list.length) list = IVLS.filter(v => v.tier === 1);
+  let v = list[0];
+  for (let i = 0; i < 8; i++) { v = list[Math.floor(Math.random() * list.length)]; if (list.length < 2 || v.id !== lastIvl) break; }
+  lastIvl = v.id;
+  const d2 = d + v.n - 1, li2 = letterIdx(d2), acc2 = accFor(v);
+  const showAcc = acc2 !== keyAccFor(key, li2) ? acc2 : null;
+  return { kind: 'ivl', staff: st, p, d, acc: key.acc, p2: p + v.n - 1, d2, acc2, showAcc, ivl: v, key: key.id, u: 0, flash: 0, jit: 0, bob: Math.random() * 6, sail: Math.random() < .5 };
+}
+function makeNote() {
+  if (isIvl()) return makeInterval();
+  const c = candidates();
+  let pick = c[0];
+  for (let i = 0; i < 8; i++) {
+    pick = c[Math.floor(Math.random() * c.length)];
+    if (c.length < 2 || !lastPick || pick.staff !== lastPick.staff || pick.p !== lastPick.p || pick.acc !== lastPick.acc) break;
+  }
+  lastPick = pick;
+  let acc = pick.acc;
+  if (!drill && settings.acc === 'on') {
+    const li = letterIdx(BOTTOM[pick.staff] + pick.p), opts = [];
+    if (SHARP_OK[li]) opts.push(1);
+    if (FLAT_OK[li]) opts.push(-1);
+    acc = opts.length && Math.random() < .6 ? opts[Math.floor(Math.random() * opts.length)] : 0;
+  }
+  return { staff: pick.staff, p: pick.p, d: BOTTOM[pick.staff] + pick.p, acc, u: 0, flash: 0, jit: 0, bob: Math.random() * 6, sail: Math.random() < .5 };
+}
+const needsAcc = () => settings.acc === 'on' || (drill && drill.some(d => d.acc !== 0));
+
+// chromatic solfège with accidentals is the hardest reading, so it starts 35% slower (the level curve still speeds it up)
+// intervals take much longer to read, and Hard's full pad longer still
+const IVL_EASE = { easy: 1.8, medium: 2.1, hard: 2.4 };
+const easeFactor = () => isIvl() ? IVL_EASE[settings.ivl] : (settings.names === 'solfege' && needsAcc()) ? 1.35 : 1;
+function tuning() {
+  if (!game.running) return { T: 8.5, I: 2.4 };
+  const k = easeFactor();
+  if (settings.mode === 'practice') return { T: 9 * k, I: 3 * k };
+  if (settings.mode === 'sprint') return { T: 6 * k, I: 0 };
+  const L = game.level - 1;
+  const decay = isIvl() ? .92 : .88;                              // intervals also speed up more gently per level
+  return { T: Math.max(1.3 * k, 8 * k * Math.pow(decay, L)), I: Math.max(.5 * k, 2.8 * k * Math.pow(decay + .01, L)) };
+}
+function roomToSpawn() {
+  const last = notes[notes.length - 1];
+  return !last || spawnX() - noteX(last) > 4.4 * g;
+}
+
+const bestKey = () => ['harborlights', settings.mode, settings.clef, staves().map(s => settings.range[s].join('_')).join('~'), settings.filter, settings.acc, settings.answer].join(':') + (isIvl() ? ':ivl:' + settings.ivl + ':' + settings.keys.slice().sort().join('.') : '');
+
+function startGame() {
+  ensureAudio();
+  Object.assign(game, { running: true, paused: false, over: false, score: 0, level: 1, hits: 0, wrong: 0, lost: 0, streak: 0, bestStreak: 0, lamps: 6, time: 60, elapsed: 0, lock: 0, stats: {} });
+  notes = []; homeward = []; floaters = []; particles = []; spawnT = .5; lastPick = null;
+  $('overlay').hidden = true; $('results').hidden = true;
+  syncPad(); hud();
+  game.key = pickKey(); game.keyPending = false; game.pendingSplash = null; game.sinceKey = 0; lastIvl = null;
+  tideUp();
+  if (settings.mode === 'arcade') levelSplash(1, isIvl() ? keySub() : null);
+  else if (isIvl() && settings.ivl === 'easy') banner = { text: keyName(game.key).toUpperCase() + ' MAJOR', sub: 'Keep the lamp lit', life: SPLASH };
+}
+
+function endGame() {
+  game.running = false; game.over = true;
+  const total = game.hits + game.wrong + game.lost;
+  const acc = total ? Math.round(100 * game.hits / total) : 0;
+  const mins = Math.max(game.elapsed, 1) / 60;
+  let isBest = false;
+  lastRun = (!drill && !drillIvls && settings.mode !== 'practice') ? { score: game.score, hits: game.hits, acc, level: settings.mode === 'arcade' ? game.level : null, mode: settings.mode, diff: currentLevel(), clef: settings.clef, answer: isIvl() ? 'intervals' : settings.answer, names: settings.names } : null;
+  syncSaveBox(true);
+  if (!drill && !drillIvls && !isGuest()) { const best = store.get(bestKey(), 0); if (game.score > best) { store.set(bestKey(), game.score); isBest = game.score > 0; } }
+  $('res-score').textContent = game.score.toLocaleString();
+  $('res-hits').textContent = game.hits;
+  $('res-acc').textContent = acc + '%';
+  $('res-npm').textContent = (game.hits / mins).toFixed(1);
+  $('res-streak').textContent = game.bestStreak;
+  $('res-level').textContent = game.level;
+  $('res-level-cell').hidden = settings.mode !== 'arcade';
+  $('res-badge').hidden = !isBest;
+  $('res-title').textContent = (drill || drillIvls) ? 'Drill log' : 'Harbor log';
+  const trouble = Object.values(game.stats).filter(s => s.miss > 0).sort((a, b) => b.miss - a.miss || a.d - b.d).slice(0, 8);
+  const wasDrill = !!(drill || drillIvls);
+  const tb = $('trouble'); tb.innerHTML = '';
+  if (!trouble.length) tb.innerHTML = '<p class="muted">No misses. Every boat came home.</p>';
+  const multiStaff = grand() || (drill && new Set(drill.map(d => d.staff)).size > 1);
+  for (const s of trouble) {
+    const el = document.createElement('span');
+    if (s.ivlKey) { el.innerHTML = `${s.label}<em>missed ${s.miss}×</em>`; tb.appendChild(el); continue; }
+    el.innerHTML = `${nameOf(s)}${multiStaff ? ' <span class="staffname">' + s.staff + '</span>' : ''}<em>missed ${s.miss}×</em>`;
+    tb.appendChild(el);
+  }
+  $('res-drill').hidden = !trouble.length;
+  $('res-drill').onclick = () => { if (isIvl()) { drillIvls = trouble.map(s => s.ivlKey); drill = null; } else { drill = trouble.map(s => ({ staff: s.staff, p: s.p, acc: s.acc })); drillIvls = null; } $('mode-practice').checked = true; settings.mode = 'practice'; $('mode-desc').textContent = MODE_DESC.practice; startGame(); };
+  $('results').hidden = false;
+  showOverlay(wasDrill ? 'Drill complete' : settings.mode === 'sprint' ? 'Time' : 'The lamp goes dark',
+    game.score.toLocaleString() + ' points', `${game.hits} boats brought home at ${acc}% accuracy.`,
+    ['Play again', startGame], ['Change settings', toHarbor], 'Space to play again');
+  drill = null; drillIvls = null;
+  syncPad(); hud(); showBest();
+}
+
+let ovActions = [];
+function showOverlay(tag, title, text, primary, secondary, keys = '') {
+  $('ov-tag').textContent = tag; $('ov-title').textContent = title; $('ov-text').textContent = text;
+  $('ov-btn').textContent = primary[0]; $('ov-btn2').textContent = secondary[0]; $('ov-keys').textContent = keys;
+  ovActions = [primary[1], secondary[1]];
+  $('overlay').hidden = false;
+  $('ov-btn').focus({ preventScroll: true });
+}
+function pause(on) {
+  if (!game.running) return;
+  game.paused = on;
+  if (on) showOverlay('Anchored', 'Paused', 'The boats wait until you come back.', ['Resume', () => pause(false)], ['Quit to harbor', quitToHarbor], 'Esc to resume · Q to quit');
+  else { $('overlay').hidden = true; document.activeElement?.blur?.(); }
+}
+
+/* ---------- views: the start page and the game ---------- */
+const view = () => document.body.dataset.view || 'splash';
+
+/* ---------- students, classes and leaderboards (Firebase) ----------
+   Shares the Rhythm Trainer's Firebase project, so the same class codes and
+   sign-in work in all three games. These values are meant to be public;
+   firestore.rules decides who can do what. */
+const FIREBASE = {
+  apiKey: 'AIzaSyDU9vbCWJ4yWuD8bAX984DmQF4dvo13BHs',
+  authDomain: 'rhythm-trainer-fc313.firebaseapp.com',
+  projectId: 'rhythm-trainer-fc313',
+  appId: '1:956677028482:web:c3ec72a279e61b6f6c929b',
+};
+let fbP = null;
+function fb() {
+  const SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+  fbP = fbP || Promise.all([import(SDK + 'firebase-app.js'), import(SDK + 'firebase-firestore.js')])
+    .then(([appMod, fs]) => ({ fs, db: fs.getFirestore(appMod.initializeApp(FIREBASE)) }))
+    .catch(e => { fbP = null; throw e; });
+  return fbP;
+}
+const wait = p => Promise.race([p, new Promise((_, bad) => setTimeout(() => bad(new Error('timeout')), 12000))]);
+
+// One sign-in for all of Mr. Milnes's games on this site: they share this key.
+const PROFILE_KEY = 'rdt_profile_v1', GUEST_KEY = 'music_guest';
+function isGuest() { try { return sessionStorage.getItem(GUEST_KEY) === '1'; } catch { return false; } }
+function getProfile() { if (isGuest()) return null; try { const p = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); return p && p.first && p.init ? p : null; } catch { return null; } }
+function setProfile(p) { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); sessionStorage.removeItem(GUEST_KEY); } catch {} }
+const displayName = p => `${p.first.charAt(0).toUpperCase()}${p.first.slice(1)} ${p.init}.`;
+const cleanCode = v => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+function updateWho() {
+  const p = getProfile();
+  $('who-btn').textContent = p ? `👤 ${displayName(p)}${p.classCode ? ' · ' + p.className : ''}` : isGuest() ? '👤 Guest (sign in)' : '👤 Sign in';
+}
+function showWelcome(keep) {
+  const p = keep ? getProfile() : null;
+  $('w-first').value = p ? p.first : ''; $('w-init').value = p ? p.init : ''; $('w-code').value = p ? p.classCode || '' : '';
+  $('w-solo').checked = !!(p && !p.classCode); $('w-code').disabled = $('w-solo').checked; $('w-error').textContent = '';
+  if (game.running && !game.paused) pause(true);
+  $('welcome').hidden = false;
+  setTimeout(() => (keep ? $('w-code') : $('w-first')).focus(), 50);
+}
+async function submitWelcome(e) {
+  e.preventDefault();
+  const first = $('w-first').value.trim().replace(/\s+/g, ' '), init = $('w-init').value.trim().toUpperCase();
+  const solo = $('w-solo').checked, code = cleanCode($('w-code').value), err = $('w-error');
+  if (!/^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ' -]{0,14}$/.test(first)) { err.textContent = 'Enter your first name (letters only).'; $('w-first').focus(); return; }
+  if (!/^[A-Z]$/.test(init)) { err.textContent = 'Enter the first letter of your last name.'; $('w-init').focus(); return; }
+  let className = '', classOwner = '';
+  if (!solo) {
+    if (!code) { err.textContent = 'Enter the class code from your teacher, or check "I\'m not in a class."'; $('w-code').focus(); return; }
+    $('w-go').disabled = true; $('w-go').textContent = 'Checking…';
+    try {
+      const { fs, db } = await fb(), d = await wait(fs.getDoc(fs.doc(db, 'classes', code)));
+      if (!d.exists()) { err.textContent = "We couldn't find that class code. Check it with your teacher."; $('w-code').focus(); return; }
+      className = d.data().name; classOwner = d.data().ownerEmail || '';
+    } catch { err.textContent = "Couldn't check the code. Check your internet connection and try again."; return; }
+    finally { $('w-go').disabled = false; $('w-go').textContent = 'Set sail'; }
+  }
+  setProfile({ first, init, classCode: solo ? '' : code, className, classOwner });
+  $('welcome').hidden = true; updateWho(); syncSaveBox();
+}
+function playAsGuest() { try { sessionStorage.setItem(GUEST_KEY, '1'); } catch {} $('welcome').hidden = true; updateWho(); syncSaveBox(); }
+async function refreshClass() {
+  const p = getProfile(); if (!p || !p.classCode) return;
+  try {
+    const { fs, db } = await fb(), d = await wait(fs.getDoc(fs.doc(db, 'classes', p.classCode)));
+    setProfile(d.exists() ? { ...p, className: d.data().name, classOwner: d.data().ownerEmail || '' } : { ...p, classCode: '', className: '', classOwner: '' });
+    updateWho();
+  } catch {}
+}
+
+let boardAll = [], boardState = 'loading', boardScope = 'world', lastRun = null, savedRunId = null, saving = false;
+const DIFF_TITLE = { easy: 'Easy', medium: 'Medium', hard: 'Hard', custom: 'Custom' };
+const ANSWER_TITLE = { names: 'Note names', any: 'Piano', exact: 'Piano exact', intervals: 'Intervals' };
+const CLEF_SHORT = { treble: 'Treble', bass: 'Bass', alto: 'Alto', grand: 'Grand staff' };
+const toRow = d => { const r = d.data(); return { ...r, id: d.id, at: r.created_at && r.created_at.toDate ? r.created_at.toDate().toISOString() : new Date().toISOString() }; };
+// World: the 400 best runs overall (filtered here by mode, clef and so on). Class: every run with that class code.
+async function fetchRows(scope) {
+  const { fs, db } = await fb(), p = getProfile(), col = fs.collection(db, 'tidal_scores');
+  const q = scope === 'class' && p && p.classCode ? fs.query(col, fs.where('class_code', '==', p.classCode)) : fs.query(col, fs.orderBy('score', 'desc'), fs.limit(400));
+  return (await wait(fs.getDocs(q))).docs.map(toRow);
+}
+async function loadBoard() {
+  const p = getProfile();
+  if (boardScope === 'class' && !(p && p.classCode)) boardScope = 'world';
+  renderScope(); boardState = 'loading'; renderBoard();
+  try { boardAll = await fetchRows(boardScope); boardState = 'ready'; } catch { boardState = 'off'; }
+  renderBoard();
+}
+function renderScope() {
+  const p = getProfile(), opts = (p && p.classCode ? [['class', p.className]] : []).concat([['world', 'World']]);
+  $('scope-seg').innerHTML = opts.map(([k, l]) => `<input type="radio" name="bscope" id="bscope-${k}" value="${k}"${k === boardScope ? ' checked' : ''}><label for="bscope-${k}"></label>`).join('');
+  opts.forEach(([k, l]) => { $('scope-seg').querySelector(`label[for="bscope-${k}"]`).textContent = l; });
+}
+function boardFilter() {
+  const f = $('board-filters'), v = n => (f.querySelector(`input[name="${n}"]:checked`) || {}).value;
+  return { mode: v('bmode'), diff: v('bdiff'), clef: v('bclef'), answer: v('bgame') };
+}
+function setBoardFilter(run) {
+  $('bmode-' + (run.mode === 'sprint' ? 'sprint' : 'arcade')).checked = true;
+  $('bdiff-' + run.diff).checked = true; $('bclef-' + run.clef).checked = true; $('bgame-' + run.answer).checked = true;
+}
+function boardRows(f, rows = boardAll) {
+  return rows.filter(r => typeof r.score === 'number' && r.mode === f.mode && (f.diff === 'all' || r.diff === f.diff) && (f.clef === 'all' || r.clef === f.clef) && (f.answer === 'all' || r.answer === f.answer))
+    .sort((a, b) => b.score - a.score || (b.acc || 0) - (a.acc || 0) || String(a.at).localeCompare(String(b.at)));
+}
+function renderBoard() {
+  const list = $('ranks'), empty = $('board-empty'), sum = $('board-summary');
+  list.innerHTML = '';
+  if (boardState !== 'ready') {
+    empty.hidden = false; sum.textContent = '';
+    empty.innerHTML = boardState === 'loading' ? '<b>Loading scores…</b>' : "<b>Couldn't load the leaderboard</b>Check your internet connection and try again.";
+    return;
+  }
+  const f = boardFilter(), rows = boardRows(f), top = rows.slice(0, 25);
+  const parts = [f.mode === 'sprint' ? 'Speed round' : 'Levels', f.diff === 'all' ? 'every difficulty' : DIFF_TITLE[f.diff], f.clef === 'all' ? 'every clef' : CLEF_SHORT[f.clef], f.answer === 'all' ? 'any answer style' : ANSWER_TITLE[f.answer]];
+  sum.innerHTML = '';
+  const b = document.createElement('b'); b.textContent = rows.length ? `Top ${top.length} of ${rows.length}` : 'No scores yet';
+  sum.append(b, ' · ' + parts.join(' · '));
+  empty.hidden = rows.length > 0;
+  if (!rows.length) { empty.innerHTML = '<b>Be the first on this board</b>Finish a Levels or Speed round game and save your score from the harbor log.'; return; }
+  top.forEach((r, i) => {
+    const li = document.createElement('li');
+    if (i < 3) li.classList.add('r' + (i + 1));
+    if (r.id && r.id === savedRunId) li.classList.add('mine');
+    const rank = document.createElement('span'); rank.className = 'rank'; rank.textContent = i + 1;
+    const who = document.createElement('span'); who.className = 'who';
+    const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = r.name || 'Player';
+    const tags = document.createElement('span'); tags.className = 'tags';
+    tags.textContent = [DIFF_TITLE[r.diff] || '', CLEF_SHORT[r.clef] || '', ANSWER_TITLE[r.answer] || '', r.names === 'solfege' ? 'Solfège' : ''].filter(Boolean).join(' · ');
+    who.append(nm, tags);
+    const det = document.createElement('span'); det.className = 'detail';
+    const when = r.at ? new Date(r.at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+    det.textContent = `${r.acc ?? 0}% accuracy` + (r.level ? ` · level ${r.level}` : ` · ${r.hits ?? 0} boats`) + (when ? ` · ${when}` : '');
+    const sc = document.createElement('span'); sc.className = 'score'; sc.textContent = Number(r.score).toLocaleString();
+    li.append(rank, who, det, sc);
+    list.appendChild(li);
+  });
+}
+function syncSaveBox(fresh) {
+  const box = $('save-box'), p = getProfile(), btn = $('save-btn');
+  if (fresh) { savedRunId = null; $('save-msg').textContent = ''; $('save-msg').className = 'msg'; btn.disabled = false; }
+  box.hidden = !lastRun;
+  if (box.hidden || savedRunId) return;
+  if (p) { $('save-who').textContent = `Post as ${displayName(p)}${p.classCode ? ' to ' + p.className + ' and the World board' : ' to the World board'}.`; btn.textContent = 'Save to leaderboard'; btn.onclick = saveRun; }
+  else { $('save-who').textContent = isGuest() ? "Guest game: this score isn't saved." : 'Sign in to save your score.'; btn.textContent = isGuest() ? 'Sign in for next time' : 'Sign in'; btn.onclick = () => showWelcome(false); }
+}
+async function saveRun() {
+  const p = getProfile();
+  if (!lastRun || saving || savedRunId || !p) return;
+  const msg = $('save-msg');
+  saving = true; $('save-btn').disabled = true; msg.textContent = 'Saving…'; msg.className = 'msg';
+  try {
+    const { fs, db } = await fb();
+    const data = { name: displayName(p), score: lastRun.score, hits: lastRun.hits, acc: lastRun.acc, level: lastRun.level || 0, mode: lastRun.mode, diff: lastRun.diff, clef: lastRun.clef, answer: lastRun.answer, names: lastRun.names, created_at: fs.serverTimestamp() };
+    if (p.classCode) data.class_code = p.classCode;
+    const ref = await wait(fs.addDoc(fs.collection(db, 'tidal_scores'), data));
+    savedRunId = ref.id;
+    const f = { mode: lastRun.mode, diff: lastRun.diff, clef: lastRun.clef, answer: lastRun.answer };
+    const [world, cls] = await Promise.all([fetchRows('world'), p.classCode ? fetchRows('class') : null]);
+    const w = boardRows(f, world).findIndex(r => r.id === ref.id), c = cls ? boardRows(f, cls).findIndex(r => r.id === ref.id) : -1;
+    const bits = [c >= 0 ? `#${c + 1} in ${p.className}` : '', w >= 0 ? `#${w + 1} in the world` : ''].filter(Boolean);
+    msg.textContent = `Saved${bits.length ? `. You're ${bits.join(' · ')}` : ''} on the ${DIFF_TITLE[lastRun.diff]} · ${CLEF_SHORT[lastRun.clef]} · ${ANSWER_TITLE[lastRun.answer]} board.`;
+    msg.className = 'msg ok';
+  } catch (e) {
+    $('save-btn').disabled = false;
+    msg.textContent = "Couldn't save. Check your internet connection and try again."; msg.className = 'msg err';
+  }
+  saving = false;
+}
+function openBoard(run) {
+  if (run) setBoardFilter(run);
+  else setBoardFilter({ mode: settings.mode === 'sprint' ? 'sprint' : 'arcade', diff: currentLevel(), clef: settings.clef, answer: isIvl() ? 'intervals' : settings.answer });
+  const p = getProfile(); boardScope = p && p.classCode ? 'class' : 'world';
+  goTo('board', loadBoard);
+}
+function goTo(v, then) {
+  const apply = () => { document.body.dataset.view = v; if (then) then(); resize(); window.scrollTo({ top: 0 }); };
+  if (document.startViewTransition && !reduceMotion) document.startViewTransition(apply); else apply();
+}
+function launch() {
+  if (view() === 'game') return;
+  ensureAudio(); beam.glow = 1; drill = null;
+  goTo('game', startGame);
+}
+function toHarbor() {
+  game.running = false; game.paused = false; game.over = false;
+  notes = []; homeward = []; floaters = []; particles = []; banner = null; spawnT = .6;
+  $('overlay').hidden = true; $('results').hidden = true; drill = null; drillIvls = null;
+  goTo('splash', () => { hud(); showBest(); });
+}
+function quitToHarbor() { toHarbor(); }
+
+function record(n, ok) {
+  if (n.kind === 'ivl') {
+    const k = 'ivl:' + ivlKey(n.ivl);
+    const s = game.stats[k] || (game.stats[k] = { ivlKey: ivlKey(n.ivl), label: settings.ivl === 'easy' ? ORD[n.ivl.n] : n.ivl.id, d: n.ivl.semis, seen: 0, miss: 0 });
+    if (ok) s.seen++; else s.miss++;
+    return;
+  }
+  const k = n.staff + ':' + n.d + ':' + n.acc;
+  const s = game.stats[k] || (game.stats[k] = { staff: n.staff, p: n.p, d: n.d, acc: n.acc, seen: 0, miss: 0 });
+  if (ok) s.seen++; else s.miss++;
+}
+
+// speed round and practice change key every 6 boats; Levels changes key with each new level
+function boatDone() {
+  if (!isIvl()) return;
+  game.sinceKey = (game.sinceKey || 0) + 1;
+  if (settings.mode !== 'arcade' && game.sinceKey >= 6 && settings.keys.length > 1) game.keyPending = true;
+}
+const keySub = () => settings.ivl === 'easy' ? keyName(game.key) + ' major' : 'New key signature';
+function applyPendingKey() {
+  game.key = pickKey(game.key); game.keyPending = false; game.sinceKey = 0;
+  if (game.pendingSplash) { levelSplash(game.pendingSplash, keySub()); game.pendingSplash = null; }
+  else banner = { text: settings.ivl === 'easy' ? keyName(game.key).toUpperCase() + ' MAJOR' : 'NEW KEY', sub: settings.ivl === 'easy' ? 'Change of key' : 'Read the key signature', life: SPLASH };
+}
+const SPLASH = 1.8;
+function levelSplash(L, sub) { banner = { text: 'LEVEL ' + L, sub: sub || (L > 1 ? 'Faster boats ahead' : 'Keep the lamp lit'), life: SPLASH }; beam.glow = 1; }
+
+function guideHome(n, withSound) {
+  const x = noteX(n), y = yOf(n.staff, n.p);
+  homeward.push({ n, x, t: 0 });
+  beam.x = x; beam.y = y; beam.glow = 1;
+  floaters.push({ x, y: (n.kind === 'ivl' ? yOf(n.staff, n.p2) : y) - 1.8 * g, text: labelOf(n), color: C.lamp, life: 1.3, max: 1.3 });
+  for (let i = 0; i < (reduceMotion ? 5 : 12); i++) {
+    const a = Math.random() * Math.PI * 2, s = (Math.random() * .8 + .3) * g * 4;
+    particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: .6, max: .6, c: C.lamp, grav: 0 });
+  }
+  if (withSound) {
+    if (n.kind === 'ivl') {
+      const f1 = freq(n), f2 = midiFreq(midiOf({ d: n.d2, acc: n.acc2 }));
+      buoyBell(f1); setTimeout(() => buoyBell(f2), 320); setTimeout(() => { buoyBell(f1); buoyBell(f2); }, 700);
+    } else buoyBell(freq(n));
+  }
+}
+
+const canAnswer = () => game.running && !game.paused && game.lock <= 0 && notes.length > 0;
+function answer(li, acc) {
+  if (!canAnswer()) return;
+  const n = notes[0];
+  const want = needsAcc() || n.acc !== 0;
+  const ok = li === letterIdx(n.d) && (!want || acc === n.acc);
+  flashKey(li, want ? acc : 0, ok);
+  if (settings.answer !== 'names') flashPiano(ok ? pianoKeysFor(midiOf(n), false) : pianoKeysFor(12 * 5 + SEMI[li] + (want ? acc : 0), false), ok ? 'hit' : 'miss');
+  settle(n, ok, nameOf({ d: li, acc: want ? acc : 0 }, false));
+}
+function answerPiano(midi, el) {
+  if (!canAnswer()) return;
+  const n = notes[0], target = midiOf(n);
+  const ok = settings.answer === 'exact' ? midi === target : (midi - target) % 12 === 0;
+  flashPiano([el], ok ? 'hit' : 'miss');
+  settle(n, ok, midiName(midi, settings.answer === 'exact'));
+}
+function answerIvl(id, el) {
+  if (!canAnswer()) return;
+  const n = notes[0]; if (n.kind !== 'ivl') return;
+  const ok = settings.ivl === 'easy' ? 'n' + n.ivl.n === id : n.ivl.id === id;
+  if (el) { el.classList.remove('hit', 'miss'); void el.offsetWidth; el.classList.add(ok ? 'hit' : 'miss'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('hit', 'miss'), 260); }
+  settle(n, ok, id[0] === 'n' ? ORD[id.slice(1)] : id);
+}
+// lanterns are counted in halves (6 = three full lanterns)
+function loseLight(halves) {
+  const before = game.lamps;
+  game.lamps = Math.max(0, game.lamps - halves);
+  if (Math.ceil(game.lamps / 2) < Math.ceil(before / 2)) glassBreak(); else fizzle();
+  const i = Math.max(0, Math.ceil(before / 2) - 1), el = $('hud-lamps').children[i];
+  if (el && !reduceMotion) { el.classList.remove('flick'); void el.offsetWidth; el.classList.add('flick'); }
+  lampFlicker = .6;
+}
+function settle(n, ok, guessText) {
+  if (ok) {
+    notes.shift();
+    guideHome(n, true);
+    game.streak++; game.bestStreak = Math.max(game.bestStreak, game.streak); game.hits++;
+    const mult = Math.min(4, 1 + Math.floor(game.streak / 10));
+    let pts;
+    if (settings.mode === 'sprint') {
+      // speed round: up to 10 bonus points for answering within 3 seconds of the boat appearing
+      const age = game.elapsed - n.born;
+      pts = (10 + Math.round(10 * Math.max(0, 1 - age / 3))) * mult;
+      floaters.push({ x: noteX(n), y: yOf(n.staff, n.p) + 2.2 * g, text: '+' + pts, color: C.safe, life: .9, max: .9 });
+    } else pts = 10 * (settings.mode === 'arcade' ? game.level : 1) * mult;
+    game.score += pts;
+    record(n, true);
+    if (settings.mode === 'arcade' && game.hits % 8 === 0) {
+      game.level++; tideUp();
+      if (isIvl() && settings.keys.length > 1) { game.keyPending = true; game.pendingSplash = game.level; }
+      else levelSplash(game.level);
+    }
+    boatDone();
+  } else {
+    game.wrong++; game.streak = 0; game.lock = .35;
+    if (settings.mode === 'arcade') { loseLight(1); if (game.lamps <= 0) { record(n, false); hud(); endGame(); return; } }
+    n.flash = .45; n.jit = .3;
+    record(n, false);
+    floaters.push({ x: noteX(n), y: yOf(n.staff, n.p) - 1.8 * g, text: 'Not ' + guessText, color: C.flare, life: .8, max: .8 });
+    if (settings.mode !== 'arcade') tone(150, .2, 'triangle', .08, 120);
+  }
+  hud();
+}
+
+function wreck(n) {
+  const y = yOf(n.staff, n.p);
+  if (!reduceMotion) shake = .3;
+  for (let i = 0; i < (reduceMotion ? 8 : 24); i++) {
+    const a = -Math.PI / 2 + (Math.random() - .5) * 2.2, s = (Math.random() + .5) * g * 6;
+    particles.push({ x: reefX() + g, y: seaY(), vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: .8, max: .8, c: i % 3 ? C.moon : C.mist, grav: g * 14 });
+  }
+  floaters.push({ x: reefX() + 5 * g, y: y - 1.8 * g, text: 'That was ' + labelOf(n), color: C.flare, life: 1.8, max: 1.8 });
+  if (settings.answer !== 'names' && !isIvl()) flashPiano(pianoKeysFor(midiOf(n), settings.answer === 'exact'), 'show', 1200);
+  foghorn();
+  game.lost++; game.streak = 0; record(n, false); boatDone();
+  if (settings.mode === 'arcade') { loseLight(2); if (game.lamps <= 0) { hud(); endGame(); return; } }
+  hud();
+}
+
+/* ---------- loop ---------- */
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (!game.paused) update(dt);
+  draw();
+  followLead();
+  requestAnimationFrame(frame);
+}
+
+function update(dt) {
+  clock += dt;
+  const { T, I } = tuning();
+  if (game.running) {
+    game.elapsed += dt; game.lock = Math.max(0, game.lock - dt);
+    if (settings.mode === 'sprint') { game.time -= dt; if (game.time <= 0) { game.time = 0; endGame(); return; } hudTime(); }
+  }
+  spawnT -= dt;
+  if (game.running && game.keyPending) {
+    if (!notes.length) { applyPendingKey(); spawnT = 1.2; }
+  } else if (game.running && settings.mode === 'sprint') {
+    // one boat at a time; the next one appears already in view the instant the last is gone
+    if (!notes.length) { const n = makeNote(); n.u = Math.min(.5, (spawnX() - (W - 3 * g)) / (spawnX() - endX(n))); n.born = game.elapsed; notes.push(n); }
+  } else if (spawnT <= 0 && roomToSpawn()) { const n = makeNote(); n.born = game.elapsed || 0; notes.push(n); spawnT = I; }
+  for (const n of notes) { n.u += dt / T; n.flash = Math.max(0, n.flash - dt); n.jit = Math.max(0, n.jit - dt); }
+  if (game.running) {
+    while (notes.length && notes[0].u >= 1) { const n = notes.shift(); wreck(n); if (!game.running) return; }
+  } else {
+    // attract mode: the keeper guides boats in on their own
+    demoT -= dt;
+    const n = notes[0];
+    if (n && n.u > .6 && demoT <= 0) { notes.shift(); guideHome(n, false); demoT = .3; }
+  }
+  // the beam rests on the lead boat during play, and sweeps the sea otherwise
+  const lead = notes[0];
+  let tx, ty;
+  if (lead && game.running) { tx = noteX(lead); ty = yOf(lead.staff, lead.p); }
+  else { tx = W * .55 + Math.sin(clock * .45) * W * .35; ty = H * .45 + Math.cos(clock * .3) * H * .15; }
+  const k = Math.min(1, dt * (beam.glow > .5 ? 2 : 7));
+  beam.x += (tx - beam.x) * k; beam.y += (ty - beam.y) * k;
+  beam.glow = Math.max(0, beam.glow - dt * 2.2);
+  for (const h of homeward) h.t += dt;
+  homeward = homeward.filter(h => h.t < 1);
+  for (const p of particles) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += p.grav * dt; p.vx *= .95; p.life -= dt; }
+  particles = particles.filter(p => p.life > 0);
+  for (const f of floaters) { f.y -= g * 1.3 * dt; f.life -= dt; }
+  floaters = floaters.filter(f => f.life > 0);
+  shake = Math.max(0, shake - dt); lampFlicker = Math.max(0, lampFlicker - dt);
+  if (banner) { banner.life -= dt; if (banner.life <= 0) banner = null; }
+}
+
+const staves = () => grand() ? ['treble', 'bass'] : [settings.clef];
+
+function draw() {
+  ctx.save();
+  ctx.clearRect(0, 0, W, H);
+  if (shake > 0) ctx.translate((Math.random() - .5) * g * .5, (Math.random() - .5) * g * .4);
+  for (const s of stars) { ctx.globalAlpha = .25 + .25 * Math.sin(clock * 1.2 + s.tw); ctx.fillStyle = C.moon; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill(); }
+  ctx.globalAlpha = 1;
+  drawBeam();
+  drawSea();
+  drawStaves();
+  for (const h of homeward) drawBoat(h.n, h.x, C.lamp, h.t);
+  notes.forEach((n, i) => {
+    let x = noteX(n); if (n.jit > 0 && !reduceMotion) x += Math.sin(n.jit * 60) * g * .25;
+    drawBoat(n, x, n.flash > 0 ? C.flare : C.moon, 0);
+  });
+  drawReef();
+  drawLighthouse();
+  for (const p of particles) { ctx.globalAlpha = Math.max(0, p.life / p.max); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, 1.6, 0, Math.PI * 2); ctx.fill(); }
+  ctx.globalAlpha = 1;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const f of floaters) {
+    ctx.globalAlpha = Math.min(1, f.life / f.max * 1.8);
+    ctx.font = `700 ${g * 1.25}px ${F.ui}`;
+    const x = Math.min(Math.max(f.x, reefX() + 4 * g), W - 3 * g);
+    ctx.lineWidth = 4; ctx.strokeStyle = C.deep; ctx.strokeText(f.text, x, f.y);
+    ctx.fillStyle = f.color; ctx.fillText(f.text, x, f.y);
+  }
+  if (banner) {
+    const age = SPLASH - banner.life;                            // seconds since the splash appeared
+    const pop = reduceMotion ? 1 : Math.min(1, age / .25);
+    const scale = reduceMotion ? 1 : .6 + .4 * (1 - Math.pow(1 - pop, 3)) + (age < .35 ? Math.sin(age / .35 * Math.PI) * .08 : 0);
+    const cx = (reefX() + W) / 2, cy = H * .42;
+    ctx.globalAlpha = Math.min(1, banner.life * 2.2, pop * 1.5);
+    ctx.save(); ctx.translate(cx, cy); ctx.scale(scale, scale);
+    ctx.font = `${Math.min(g * 4.2, W / 7)}px ${F.display}`;
+    ctx.lineWidth = 10; ctx.lineJoin = 'round'; ctx.strokeStyle = C.deep; ctx.strokeText(banner.text, 0, 0);
+    ctx.shadowColor = C.lamp; ctx.shadowBlur = 24; ctx.fillStyle = C.lamp; ctx.fillText(banner.text, 0, 0); ctx.shadowBlur = 0;
+    ctx.font = `600 ${g * 1.05}px ${F.ui}`; ctx.lineWidth = 4; ctx.strokeText(banner.sub.toUpperCase(), 0, g * 2.7);
+    ctx.fillStyle = C.moon; ctx.fillText(banner.sub.toUpperCase(), 0, g * 2.7);
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function drawBeam() {
+  const L = lampPos();
+  const dx = beam.x - L.x, dy = beam.y - L.y, len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len, ny = dx / len, spread = 1.6 * g + len * .06;
+  const far = 1.25;                                              // carry the beam a little past its target
+  const ex = L.x + dx * far, ey = L.y + dy * far;
+  const grd = ctx.createLinearGradient(L.x, L.y, ex, ey);
+  const a = game.running ? .2 + beam.glow * .35 : .13;
+  grd.addColorStop(0, `rgba(255,214,140,${a + .15})`);
+  grd.addColorStop(.8, `rgba(255,214,140,${a * .6})`);
+  grd.addColorStop(1, 'rgba(255,214,140,0)');
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.fillStyle = grd;
+  ctx.beginPath(); ctx.moveTo(L.x, L.y);
+  ctx.lineTo(ex + nx * spread * far, ey + ny * spread * far);
+  ctx.lineTo(ex - nx * spread * far, ey - ny * spread * far);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function drawSea() {
+  const sy = seaY();
+  ctx.fillStyle = '#0a1720'; ctx.fillRect(0, sy, W, H - sy);
+  ctx.strokeStyle = C.mist; ctx.lineWidth = 1;
+  for (let row = 0; row < 3; row++) {
+    ctx.globalAlpha = .28 - row * .07;
+    const y0 = sy + row * .6 * g, amp = .12 * g, ph = clock * (1.2 - row * .3) + row;
+    ctx.beginPath();
+    for (let x = 0; x <= W; x += 6) { const y = y0 + Math.sin(x / (1.4 * g) + ph) * amp; x ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawHull(n, x, home) {
+  const hy = seaY() + .15 * g + Math.sin(clock * 2 + n.bob) * .12 * g;
+  ctx.fillStyle = home ? C.lamp : '#c9d5d9';
+  ctx.beginPath(); ctx.moveTo(x - 1.1 * g, hy - .25 * g); ctx.lineTo(x + 1.1 * g, hy - .25 * g); ctx.lineTo(x + .75 * g, hy + .25 * g); ctx.lineTo(x - .75 * g, hy + .25 * g); ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  if (n.sail) { ctx.moveTo(x - .05 * g, hy - .35 * g); ctx.lineTo(x - .05 * g, hy - 1.35 * g); ctx.lineTo(x + .8 * g, hy - .35 * g); }
+  else { ctx.rect(x - .5 * g, hy - .75 * g, .9 * g, .45 * g); }
+  ctx.fill();
+  ctx.fillStyle = C.lamp; ctx.beginPath(); ctx.arc(x - .7 * g, hy - .45 * g, .12 * g, 0, Math.PI * 2); ctx.fill();
+}
+function wholeNote(x, y, col) {
+  const rx = g * .36, ry = g * .22, rot = -1.05;
+  ctx.fillStyle = col; ctx.beginPath();
+  ctx.ellipse(x, y, g * .74, g * .47, 0, 0, Math.PI * 2);
+  ctx.moveTo(x + rx * Math.cos(rot), y + rx * Math.sin(rot));
+  ctx.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2);
+  ctx.fill('evenodd');
+}
+// a harmonic interval: two whole notes on one boat, the upper one shifted right when they are a 2nd apart
+function drawIvlBoat(n, x, col, home) {
+  ctx.save();
+  if (home) { ctx.globalAlpha = 1 - home; ctx.translate(-home * home * 2 * g, home * home * 2.5 * g); }
+  drawHull(n, x, home);
+  const x2 = n.ivl.n === 2 ? x + 1.4 * g : x, lo = Math.min(n.p, n.p2), hi = Math.max(n.p, n.p2);
+  ctx.strokeStyle = C.moon; ctx.lineWidth = Math.max(1, g * .08);
+  const l0 = x - 1.15 * g, l1 = Math.max(x, x2) + 1.15 * g;
+  for (let lp = -2; lp >= lo; lp -= 2) { const ly = yOf(n.staff, lp); ctx.beginPath(); ctx.moveTo(l0, ly); ctx.lineTo(l1, ly); ctx.stroke(); }
+  for (let lp = 10; lp <= hi; lp += 2) { const ly = yOf(n.staff, lp); ctx.beginPath(); ctx.moveTo(l0, ly); ctx.lineTo(l1, ly); ctx.stroke(); }
+  wholeNote(x, yOf(n.staff, n.p), col);
+  wholeNote(x2, yOf(n.staff, n.p2), col);
+  if (n.showAcc != null) {
+    ctx.fillStyle = col; ctx.font = `${4 * g}px ${F.music}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    const wide = Math.abs(n.showAcc) === 2 && n.showAcc < 0 ? .35 : 0;
+    ctx.fillText(ANY_ACC[n.showAcc], x - (1.8 + wide) * g, yOf(n.staff, n.p2) + ACC_DROP[n.showAcc] * g);
+  }
+  ctx.restore();
+}
+function drawKeySig(st, key) {
+  if (!key.sig) return;
+  const kind = key.sig > 0 ? 'sharp' : 'flat', count = Math.abs(key.sig), x0 = staffLeft() + 3.55 * g;
+  ctx.fillStyle = C.moon; ctx.font = `${4 * g}px ${F.music}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  for (let i = 0; i < count; i++) {
+    const p = SIG_POS[kind][i] + SIG_SHIFT[st];
+    ctx.fillText(kind === 'sharp' ? '\u266F' : '\u266D', x0 + i * .95 * g, yOf(st, p) + (kind === 'sharp' ? .52 : .4) * g);
+  }
+}
+function drawStaves() {
+  ctx.strokeStyle = C.moon; ctx.lineWidth = Math.max(1, g * .07);
+  for (const st of staves()) {
+    ctx.globalAlpha = .6;
+    for (let p = 0; p <= 8; p += 2) { const y = Math.round(yOf(st, p)) + .5; ctx.beginPath(); ctx.moveTo(staffLeft(), y); ctx.lineTo(W, y); ctx.stroke(); }
+    ctx.globalAlpha = .95; ctx.fillStyle = C.moon;
+    ctx.font = `${4 * g}px ${F.music}`; ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+    ctx.fillText(GLYPH[st], staffLeft() + .35 * g, yOf(st, 0) - CLEF_LIFT[st] * g);   // Noto Music: 1em = staff height, baseline on the bottom line
+    if (isIvl()) drawKeySig(st, activeKey());
+  }
+  ctx.globalAlpha = .6;
+  const s = staves();
+  ctx.beginPath(); ctx.moveTo(staffLeft(), yOf(s[0], 8)); ctx.lineTo(staffLeft(), yOf(s[s.length - 1], 0)); ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+// a boat is its note on the staff plus a small hull riding the swell below, directly beneath it
+function drawBoat(n, x, col, home) {
+  const y = yOf(n.staff, n.p);
+  if (n.kind === 'ivl') return drawIvlBoat(n, x, col, home);
+  ctx.save();
+  if (home) { ctx.globalAlpha = 1 - home; ctx.translate(-home * home * 2 * g, home * home * 2.5 * g); }
+  // hull
+  const hy = seaY() + .15 * g + Math.sin(clock * 2 + n.bob) * .12 * g;
+  ctx.fillStyle = home ? C.lamp : '#c9d5d9';
+  ctx.beginPath(); ctx.moveTo(x - 1.1 * g, hy - .25 * g); ctx.lineTo(x + 1.1 * g, hy - .25 * g); ctx.lineTo(x + .75 * g, hy + .25 * g); ctx.lineTo(x - .75 * g, hy + .25 * g); ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  if (n.sail) { ctx.moveTo(x - .05 * g, hy - .35 * g); ctx.lineTo(x - .05 * g, hy - 1.35 * g); ctx.lineTo(x + .8 * g, hy - .35 * g); }
+  else { ctx.rect(x - .5 * g, hy - .75 * g, .9 * g, .45 * g); }
+  ctx.fill();
+  ctx.fillStyle = C.lamp; ctx.beginPath(); ctx.arc(x - .7 * g, hy - .45 * g, .12 * g, 0, Math.PI * 2); ctx.fill();
+  // note
+  ctx.strokeStyle = C.moon; ctx.lineWidth = Math.max(1, g * .08);
+  for (let lp = -2; lp >= n.p; lp -= 2) { const ly = yOf(n.staff, lp); ctx.beginPath(); ctx.moveTo(x - 1.1 * g, ly); ctx.lineTo(x + 1.1 * g, ly); ctx.stroke(); }
+  for (let lp = 10; lp <= n.p; lp += 2) { const ly = yOf(n.staff, lp); ctx.beginPath(); ctx.moveTo(x - 1.1 * g, ly); ctx.lineTo(x + 1.1 * g, ly); ctx.stroke(); }
+  ctx.fillStyle = col; ctx.strokeStyle = col;
+  ctx.beginPath(); ctx.ellipse(x, y, g * .62, g * .44, -.35, 0, Math.PI * 2); ctx.fill();
+  ctx.lineWidth = Math.max(1.2, g * .11);
+  ctx.beginPath();
+  if (n.p < 4) { ctx.moveTo(x + g * .56, y - g * .1); ctx.lineTo(x + g * .56, y - 3.4 * g); }
+  else { ctx.moveTo(x - g * .56, y + g * .1); ctx.lineTo(x - g * .56, y + 3.4 * g); }
+  ctx.stroke();
+  if (n.acc) {
+    // same staff-sized em as the clefs; offsets centre the sharp's body / the flat's bowl on the note
+    ctx.font = `${4 * g}px ${F.music}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillText(ACC_GLYPH[n.acc], x - 1.75 * g, n.acc === 1 ? y + .52 * g : y + .4 * g);
+  }
+  ctx.restore();
+}
+
+function drawReef() {
+  const rx = reefX(), sy = seaY();
+  // faint danger line up through the staff
+  ctx.save(); ctx.setLineDash([g * .25, g * .45]); ctx.strokeStyle = C.flare; ctx.globalAlpha = .35; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(rx, .6 * g); ctx.lineTo(rx, sy); ctx.stroke(); ctx.restore();
+  ctx.fillStyle = '#23323a';
+  const rocks = [[-1.1, .9, .7], [0, 1.3, .9], [1, .8, .6]];
+  for (const [ox, h, w] of rocks) {
+    ctx.beginPath(); ctx.moveTo(rx + (ox - w) * g, sy + .5 * g); ctx.lineTo(rx + (ox - w * .3) * g, sy - h * g); ctx.lineTo(rx + (ox + w * .4) * g, sy - h * .7 * g); ctx.lineTo(rx + (ox + w) * g, sy + .5 * g); ctx.closePath(); ctx.fill();
+  }
+}
+
+function drawLighthouse() {
+  const L = lampPos(), base = seaY() + .3 * g;
+  const topW = 1.0 * g, botW = 1.7 * g, top = L.y + .9 * g;
+  // rocks under the tower
+  ctx.fillStyle = '#23323a';
+  ctx.beginPath(); ctx.moveTo(0, H); ctx.lineTo(0, base - .4 * g); ctx.lineTo(.8 * g, base - .9 * g); ctx.lineTo(2.4 * g, base - .6 * g); ctx.lineTo(3.2 * g, base + .2 * g); ctx.lineTo(3.2 * g, H); ctx.closePath(); ctx.fill();
+  // striped tower
+  const bands = 5, h = base - .6 * g - top;
+  for (let i = 0; i < bands; i++) {
+    const y0 = top + h * i / bands, y1 = top + h * (i + 1) / bands;
+    const w0 = topW + (botW - topW) * i / bands, w1 = topW + (botW - topW) * (i + 1) / bands;
+    ctx.fillStyle = i % 2 ? '#e9e2d2' : '#c4453a';
+    ctx.beginPath(); ctx.moveTo(L.x - w0 / 2, y0); ctx.lineTo(L.x + w0 / 2, y0); ctx.lineTo(L.x + w1 / 2, y1); ctx.lineTo(L.x - w1 / 2, y1); ctx.closePath(); ctx.fill();
+  }
+  // gallery, lantern room, roof
+  ctx.fillStyle = '#1b2a33'; ctx.fillRect(L.x - .8 * g, top - .2 * g, 1.6 * g, .25 * g);
+  const lit = game.running && settings.mode === 'arcade' ? .35 + .65 * game.lamps / 6 : 1;
+  ctx.globalAlpha = lampFlicker > 0 && !reduceMotion ? lit * (.4 + .6 * Math.abs(Math.sin(lampFlicker * 30))) : lit;
+  ctx.fillStyle = C.lamp; ctx.shadowColor = C.lamp; ctx.shadowBlur = (18 + beam.glow * 20) * lit;
+  ctx.fillRect(L.x - .4 * g, L.y - .35 * g, .8 * g, .75 * g); ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+  ctx.fillStyle = '#1b2a33';
+  ctx.beginPath(); ctx.moveTo(L.x - .6 * g, L.y - .35 * g); ctx.lineTo(L.x, L.y - 1 * g); ctx.lineTo(L.x + .6 * g, L.y - .35 * g); ctx.closePath(); ctx.fill();
+}
+
+/* ---------- HUD & pad ---------- */
+function hud() {
+  $('hud-score').textContent = (game.score || 0).toLocaleString();
+  const mult = Math.min(4, 1 + Math.floor((game.streak || 0) / 10));
+  $('hud-streak').textContent = (game.streak || 0) + (mult > 1 ? ' ×' + mult : '');
+  if (settings.mode === 'sprint') hudTime();
+  else { $('hud-level-k').textContent = 'Level'; $('hud-level').textContent = settings.mode === 'practice' ? '—' : (game.level || 1); }
+  $('hud-lamp-cell').hidden = settings.mode !== 'arcade';
+  const h = game.running || game.over ? game.lamps : 6;
+  [...$('hud-lamps').children].forEach((el, i) => { const v = Math.max(0, Math.min(2, h - 2 * i)); el.classList.toggle('off', v === 0); el.classList.toggle('dim', v === 1); });
+}
+function hudTime() { $('hud-level-k').textContent = 'Time'; const t = Math.ceil(game.running ? game.time : 60); $('hud-level').textContent = Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); }
+function showBest() { const b = store.get(bestKey(), 0).toLocaleString(); $('hud-best').textContent = b; $('setup-best').textContent = b; }
+
+function keyButton(li, acc) {
+  const b = document.createElement('button'); b.type = 'button'; b.dataset.li = li; b.dataset.acc = acc;
+  const n = { d: li, acc };
+  if (acc) {
+    b.className = 'acc';
+    b.textContent = nameOf(n, false);
+    b.setAttribute('aria-label', LETTERS[li] + (acc > 0 ? ' sharp' : ' flat'));
+  } else {
+    b.textContent = settings.names === 'solfege' ? SOLF[li] : LETTERS[li];
+    if (settings.names === 'solfege') b.appendChild(Object.assign(document.createElement('small'), { textContent: LETTERS[li] }));
+  }
+  b.addEventListener('pointerdown', e => { e.preventDefault(); ensureAudio(); answer(li, acc); });
+  b.addEventListener('click', e => { if (e.detail === 0) answer(li, acc); });
+  return b;
+}
+// with accidentals on, each letter gets a small sharp above and a small flat below
+// interval pad: the number in the middle; M above / m below for 2, 3, 6, 7; P in the middle for 4, 5, 8, with A above and d below on Hard
+function ivlButton(id, small) {
+  const b = document.createElement('button'); b.type = 'button'; b.dataset.ivl = id;
+  if (small) { b.className = 'acc'; b.textContent = id; }
+  else if (id[0] === 'n') b.innerHTML = `${id.slice(1)}<small>${ORD[id.slice(1)]}</small>`;
+  else b.innerHTML = `${id}<small>perfect</small>`;
+  b.setAttribute('aria-label', id[0] === 'n' ? ORD[id.slice(1)] : id);
+  b.addEventListener('pointerdown', e => { e.preventDefault(); ensureAudio(); answerIvl(id, b); });
+  b.addEventListener('click', e => { if (e.detail === 0) answerIvl(id, b); });
+  return b;
+}
+function buildIvlPad() {
+  const k = $('keys'); k.innerHTML = ''; k.classList.add('ivl');
+  const hard = settings.ivl === 'hard', easy = settings.ivl === 'easy';
+  const spacer = () => Object.assign(document.createElement('span'), { className: 'gap' });
+  for (let n = 2; n <= 8; n++) {
+    const col = document.createElement('div'); col.className = 'col';
+    if (easy) col.appendChild(ivlButton('n' + n));
+    else if ([4, 5, 8].includes(n)) {
+      if (hard) col.appendChild(spacer());
+      col.appendChild(hard ? ivlButton('A' + n, true) : spacer());
+      col.appendChild(ivlButton('P' + n));
+      col.appendChild(hard ? ivlButton('d' + n, true) : spacer());
+      if (hard) col.appendChild(spacer());
+    } else {
+      if (hard) col.appendChild(ivlButton('A' + n, true));
+      col.appendChild(ivlButton('M' + n, true));
+      col.appendChild(Object.assign(document.createElement('span'), { className: 'lab', textContent: ORD[n] }));
+      col.appendChild(ivlButton('m' + n, true));
+      if (hard) col.appendChild(ivlButton('d' + n, true));
+    }
+    k.appendChild(col);
+  }
+}
+function buildKeys() {
+  if (isIvl()) return buildIvlPad();
+  $('keys').classList.remove('ivl');
+  const k = $('keys'), withAcc = needsAcc(); k.innerHTML = '';
+  for (let i = 0; i < 7; i++) {
+    const col = document.createElement('div'); col.className = 'col';
+    const spacer = () => Object.assign(document.createElement('span'), { className: 'gap' });
+    if (withAcc) col.appendChild(SHARP_OK[i] ? keyButton(i, 1) : spacer());
+    col.appendChild(keyButton(i, 0));
+    if (withAcc) col.appendChild(FLAT_OK[i] ? keyButton(i, -1) : spacer());
+    k.appendChild(col);
+  }
+}
+function flashKey(li, acc, ok) {
+  const b = $('keys').querySelector(`button[data-li="${li}"][data-acc="${acc}"]`) || $('keys').querySelector(`button[data-li="${li}"][data-acc="0"]`);
+  if (!b) return;
+  b.classList.remove('hit', 'miss'); void b.offsetWidth; b.classList.add(ok ? 'hit' : 'miss');
+  clearTimeout(b._t); b._t = setTimeout(() => b.classList.remove('hit', 'miss'), 260);
+}
+// the piano covers every octave the chosen range touches
+function pianoSpan() {
+  let lo = Infinity, hi = -Infinity;
+  for (const c of candidates()) { const d = BOTTOM[c.staff] + c.p; lo = Math.min(lo, d); hi = Math.max(hi, d); }
+  if (!isFinite(lo)) { lo = 28; hi = 34; }
+  return [octave(lo), octave(hi)];
+}
+function buildPiano() {
+  const pn = $('piano'); pn.innerHTML = '';
+  const [o1, o2] = pianoSpan(), whites = [];
+  for (let o = o1; o <= o2; o++) for (let i = 0; i < 7; i++) whites.push({ o, i, d: o * 7 + i });
+  pn.style.minWidth = Math.max(0, whites.length * 30) + 'px';
+  const pct = 100 / whites.length;
+  whites.forEach((w, j) => {
+    const midi = 12 * (w.o + 1) + SEMI[w.i];
+    const k = document.createElement('div'); k.className = 'wk'; k.dataset.midi = midi;
+    const label = settings.labels === 'all' ? (settings.names === 'solfege' ? SOLF[w.i] : LETTERS[w.i]) + (w.i === 0 ? w.o : '') : (w.i === 0 ? (settings.names === 'solfege' ? 'Do' : 'C') + w.o : '');
+    k.innerHTML = (midi === 60 ? '<i class="mc" title="Middle C"></i>' : '') + label;
+    k.setAttribute('aria-label', midiName(midi, true) + (midi === 60 ? ' (middle C)' : ''));
+    k.addEventListener('pointerdown', e => { e.preventDefault(); ensureAudio(); answerPiano(midi, k); });
+    pn.appendChild(k);
+    if (SHARP_OK[w.i] && j < whites.length - 1) {
+      const b = document.createElement('div'); b.className = 'bk'; b.dataset.midi = midi + 1;
+      b.style.left = `calc(${(j + 1) * pct}% - ${pct * .31}%)`; b.style.width = pct * .62 + '%';
+      b.setAttribute('aria-label', midiName(midi + 1, true));
+      b.addEventListener('pointerdown', e => { e.preventDefault(); ensureAudio(); answerPiano(midi + 1, b); });
+      pn.appendChild(b);
+    }
+  });
+}
+function pianoKeysFor(midi, exact) {
+  return [...$('piano').querySelectorAll('[data-midi]')].filter(k => exact ? +k.dataset.midi === midi : ((+k.dataset.midi - midi) % 12 + 12) % 12 === 0);
+}
+function flashPiano(keys, cls, ms = 260) {
+  for (const k of keys) { k.classList.remove('hit', 'miss', 'show'); void k.offsetWidth; k.classList.add(cls); clearTimeout(k._t); k._t = setTimeout(() => k.classList.remove(cls), ms); }
+}
+// in exact mode on a scrolling piano, keep the lead boat's key in view
+let pianoFollow = null;
+function followLead() {
+  if (settings.answer !== 'exact' || isIvl() || !notes[0] || !game.running) return;
+  const m = midiOf(notes[0]); if (m === pianoFollow) return; pianoFollow = m;
+  const wrap = $('piano-wrap'); if (wrap.scrollWidth <= wrap.clientWidth) return;
+  const k = pianoKeysFor(m, true)[0]; if (!k) return;
+  const x = k.offsetLeft + k.offsetWidth / 2 - wrap.clientWidth / 2;
+  wrap.scrollTo({ left: x, behavior: reduceMotion ? 'auto' : 'smooth' });
+}
+
+function syncPad() {
+  const acc = needsAcc(), piano = settings.answer !== 'names' && !isIvl();
+  $('keys').hidden = piano; $('piano-wrap').hidden = !piano;
+  if (piano) { buildPiano(); pianoFollow = null; }
+  buildKeys();
+  $('hint').innerHTML = isIvl()
+    ? (settings.ivl === 'easy' ? 'Keyboard: <kbd>2</kbd>–<kbd>8</kbd> to answer' : 'Keyboard: <kbd>2</kbd>–<kbd>8</kbd> for major or perfect · <kbd>Shift</kbd> for minor or diminished' + (settings.ivl === 'hard' ? ' · <kbd>Alt</kbd>/<kbd>Option</kbd> for augmented · <kbd>Shift</kbd>+<kbd>Alt</kbd> for diminished 2, 3, 6, 7' : '')) + ' · <kbd>Esc</kbd> to pause or quit'
+    : settings.answer === 'exact'
+    ? 'Click or tap the exact key · the dot marks middle C · <kbd>Esc</kbd> to pause or quit'
+    : 'Keyboard: <kbd>A</kbd>–<kbd>G</kbd> to answer' + (acc ? ' · hold <kbd>Shift</kbd> for ♯, <kbd>Alt</kbd>/<kbd>Option</kbd> for ♭' : '') + ' · <kbd>Esc</kbd> to pause or quit';
+}
+
+/* ---------- range picker ---------- */
+const PITCH_NAME = d => LETTERS[letterIdx(d)] + octave(d);
+const STAFF_TITLE = { treble: 'Treble range', bass: 'Bass range', alto: 'Alto range' };
+function miniStaff(s, lo, hi) {
+  const m = 9, y = p => 13 + (14 - p) * m / 2, ln = [];
+  for (let p = 0; p <= 8; p += 2) ln.push(`<line x1="4" x2="176" y1="${y(p)}" y2="${y(p)}" stroke="currentColor" stroke-opacity=".7" stroke-width="1"/>`);
+  const note = (p, x) => {
+    let out = '';
+    for (let l = -2; l >= p; l -= 2) out += `<line x1="${x - 11}" x2="${x + 11}" y1="${y(l)}" y2="${y(l)}" stroke="currentColor" stroke-width="1.2"/>`;
+    for (let l = 10; l <= p; l += 2) out += `<line x1="${x - 11}" x2="${x + 11}" y1="${y(l)}" y2="${y(l)}" stroke="currentColor" stroke-width="1.2"/>`;
+    return out + `<ellipse cx="${x}" cy="${y(p)}" rx="6.4" ry="4.6" fill="none" style="stroke:var(--lamp)" stroke-width="2.4"/>`;
+  };
+  return `<svg class="mini" viewBox="0 0 180 116" aria-hidden="true">${ln.join('')}<text x="7" y="${y(0) - CLEF_LIFT[s] * m}" font-size="${4 * m}" font-family="${F.music.replace(/"/g, "'")}" fill="currentColor">${GLYPH[s]}</text>${note(lo, 96)}${note(hi, 146)}</svg>`;
+}
+function arrowBtn(s, end, dir, ok, label) {
+  return `<button type="button" class="arr" data-s="${s}" data-end="${end}" data-dir="${dir}" aria-label="${label}"${ok ? '' : ' disabled'}><svg viewBox="0 0 20 20"><path d="${dir > 0 ? 'M5 12.5l5-5 5 5' : 'M5 7.5l5 5 5-5'}"/></svg></button>`;
+}
+function renderRanges() {
+  const box = $('ranges'); box.innerHTML = '';
+  for (const s of staves()) {
+    const [lo, hi] = settings.range[s], [min, max] = LEDGER[s];
+    const el = document.createElement('div'); el.className = 'rangepick';
+    el.innerHTML = `<div class="rlabel">${STAFF_TITLE[s]}</div>
+      <div class="arrows">${arrowBtn(s, 0, 1, hi - lo > MIN_SPAN, 'Raise the lowest note')}${arrowBtn(s, 0, -1, lo > min, 'Lower the lowest note')}</div>
+      ${miniStaff(s, lo, hi)}
+      <div class="arrows">${arrowBtn(s, 1, 1, hi < max, 'Raise the highest note')}${arrowBtn(s, 1, -1, hi - lo > MIN_SPAN, 'Lower the highest note')}</div>
+      <div class="rcap">${PITCH_NAME(BOTTOM[s] + lo)} <span>to</span> ${PITCH_NAME(BOTTOM[s] + hi)}</div>`;
+    box.appendChild(el);
+  }
+}
+function cleanRange() {
+  const r = settings.range && typeof settings.range === 'object' ? settings.range : {};
+  const out = DEFAULT_RANGE();
+  for (const s of Object.keys(out)) {
+    const v = r[s];
+    if (Array.isArray(v) && v.length === 2 && v.every(Number.isInteger)) {
+      const lo = Math.max(LEDGER[s][0], v[0]), hi = Math.min(LEDGER[s][1], v[1]);
+      if (hi - lo >= MIN_SPAN) out[s] = [lo, hi];
+    }
+  }
+  settings.range = out;
+}
+$('ranges').addEventListener('click', e => {
+  const b = e.target.closest('.arr'); if (!b || b.disabled || (game.running && !game.paused)) return;
+  const s = b.dataset.s, end = +b.dataset.end, dir = +b.dataset.dir;
+  const r = settings.range[s]; r[end] += dir;
+  const [min, max] = LEDGER[s];
+  r[0] = Math.max(min, Math.min(r[0], r[1] - MIN_SPAN)); r[1] = Math.min(max, Math.max(r[1], r[0] + MIN_SPAN));
+  drill = null; applySettings();
+  const again = $('ranges').querySelector(`.arr[data-s="${s}"][data-end="${end}"][data-dir="${dir}"]`);
+  (again && !again.disabled ? again : $('ranges').querySelector(`.arr[data-s="${s}"]:not(:disabled)`))?.focus();
+});
+
+/* ---------- simple setup: difficulty, game and clef tiles ---------- */
+const PIANO_SVG = '<svg viewBox="0 0 76 48" aria-hidden="true"><rect x="1" y="1" width="74" height="46" rx="4" fill="var(--moon)"/><g stroke="#8fa3ad" stroke-width="1"><line x1="11.6" y1="1" x2="11.6" y2="47"/><line x1="22.1" y1="1" x2="22.1" y2="47"/><line x1="32.7" y1="1" x2="32.7" y2="47"/><line x1="43.3" y1="1" x2="43.3" y2="47"/><line x1="53.9" y1="1" x2="53.9" y2="47"/><line x1="64.4" y1="1" x2="64.4" y2="47"/></g><g fill="var(--deep)"><rect x="8.1" y="1" width="7" height="28" rx="1.5"/><rect x="18.6" y="1" width="7" height="28" rx="1.5"/><rect x="39.8" y="1" width="7" height="28" rx="1.5"/><rect x="50.4" y="1" width="7" height="28" rx="1.5"/><rect x="60.9" y="1" width="7" height="28" rx="1.5"/></g></svg>';
+const CLEF_CYCLE = ['treble', 'bass', 'grand'];
+const IVL_SVG = '<svg viewBox="0 0 76 56" aria-hidden="true"><g stroke="var(--moon)" stroke-opacity=".6" stroke-width="1.2"><line x1="2" x2="74" y1="10" y2="10"/><line x1="2" x2="74" y1="19" y2="19"/><line x1="2" x2="74" y1="28" y2="28"/><line x1="2" x2="74" y1="37" y2="37"/><line x1="2" x2="74" y1="46" y2="46"/></g><g fill="var(--lamp)"><ellipse cx="38" cy="46" rx="6.6" ry="4.4"/><ellipse cx="38" cy="23.5" rx="6.6" ry="4.4"/></g><g fill="var(--deep)"><ellipse cx="38" cy="46" rx="3" ry="2" transform="rotate(-60 38 46)"/><ellipse cx="38" cy="23.5" rx="3" ry="2" transform="rotate(-60 38 23.5)"/></g></svg>';
+function miniSig(key) {
+  const w = 62, h = 28, gp = 4, y = pp => h - 4 - pp * gp / 2; let o = '';
+  for (let pp = 0; pp <= 8; pp += 2) o += `<line x1="1" x2="${w - 1}" y1="${y(pp)}" y2="${y(pp)}" stroke="currentColor" stroke-opacity=".5" stroke-width=".8"/>`;
+  const kind = key.sig > 0 ? 'sharp' : 'flat', list = SIG_POS[kind].slice(0, Math.abs(key.sig)), step = Math.min(7.5, (w - 8) / Math.max(1, list.length));
+  list.forEach((pp, i) => { o += `<text x="${4 + i * step}" y="${(y(pp) + (kind === 'sharp' ? 2.1 : 1.6)).toFixed(1)}" font-size="16" font-family="${F.music.replace(/"/g, "'")}" fill="currentColor">${kind === 'sharp' ? '\u266F' : '\u266D'}</text>`; });
+  return `<svg viewBox="0 0 ${w} ${h}" aria-hidden="true">${o}</svg>`;
+}
+function renderKeyChips() {
+  const box = $('keychips'); if (!box) return;
+  const chip = k => `<button type="button" class="kc" data-k="${k.id}" aria-pressed="${settings.keys.includes(k.id)}" aria-label="${keyName(k.id)} major">${keyName(k.id)}${miniSig(k)}</button>`;
+  box.innerHTML = `<div class="keyrow">${MAJOR.slice(0, 7).map(chip).join('')}</div><div class="keymid">${chip(KEY_BY_ID.C)}</div><div class="keyrow">${MAJOR.slice(8).map(chip).join('')}</div>`;
+  $('key-count').textContent = `${settings.keys.length} of 15 keys selected. Tap a key to add or remove it.`;
+}
+$('keychips').addEventListener('click', e => {
+  const c = e.target.closest('.kc'); if (!c) return;
+  const id = c.dataset.k, on = settings.keys.includes(id);
+  if (on && settings.keys.length === 1) return;
+  settings.keys = on ? settings.keys.filter(k => k !== id) : [...settings.keys, id];
+  drill = null; applySettings();
+  $('keychips').querySelector(`[data-k="${id}"]`)?.focus();
+});
+$('key-presets').addEventListener('click', e => {
+  const p = e.target.dataset && e.target.dataset.p; if (!p) return;
+  settings.keys = MAJOR.filter(k => p === 'all' || (p === 's' && k.sig >= 0) || (p === 'f' && k.sig <= 0) || (+p && Math.abs(k.sig) <= +p)).map(k => k.id);
+  drill = null; applySettings();
+});
+const MODE_CYCLE = ['arcade', 'sprint', 'practice'];
+const MODE_TITLE = { arcade: 'Levels', sprint: 'Speed round', practice: 'Practice' };
+const MODE_ICON = {
+  arcade: '<svg class="icon" viewBox="0 0 52 52" aria-hidden="true"><path d="M8 42h10V32h10V22h10V12h6"/><path d="M8 46h36"/></svg>',
+  sprint: '<svg class="icon" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="29" r="16"/><path d="M26 29l7-7"/><path d="M21 8h10M26 8v5M40 15l3-3"/></svg>',
+  practice: '<svg class="icon" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="11" r="4"/><path d="M26 15v29"/><path d="M17 23h18"/><path d="M10 32c1 8 8 12 16 12s15-4 16-12"/><path d="M10 32l-3 3M10 32l3 3M42 32l-3 3M42 32l3 3"/></svg>'
+};
+const CLEF_TITLE = { treble: 'Treble', bass: 'Bass', alto: 'Alto', grand: 'Grand staff' };
+const same = (a, b) => a[0] === b[0] && a[1] === b[1];
+function currentLevel() {
+  if (isIvl()) { const a = settings.keys.slice().sort().join(), b = KEY_PRESET[settings.ivl].slice().sort().join(); return a === b ? settings.ivl : 'custom'; }
+  if (settings.filter !== 'all') return 'custom';
+  const all = s => ['treble', 'bass', 'alto'].every(st => same(settings.range[st], s(st)));
+  if (settings.acc === 'off' && all(() => [0, 8])) return 'easy';
+  if (settings.acc === 'on' && all(() => [0, 8])) return 'medium';
+  if (settings.acc === 'on' && all(st => LEDGER[st])) return 'hard';
+  return 'custom';
+}
+function applyLevel(lv) {
+  if (isIvl()) { settings.ivl = lv; settings.keys = KEY_PRESET[lv].slice(); $('ivl-' + lv).checked = true; return; }
+  settings.acc = lv === 'easy' ? 'off' : 'on';
+  settings.filter = 'all';
+  for (const st of ['treble', 'bass', 'alto']) settings.range[st] = lv === 'hard' ? LEDGER[st].slice() : [0, 8];
+  $('acc-' + settings.acc).checked = true; $('filter-all').checked = true;
+}
+function rangeText(lv) {
+  const st = grand() ? ['treble', 'bass'] : [settings.clef];
+  return st.map(s => { const [lo, hi] = lv === 'hard' ? LEDGER[s] : [0, 8]; return PITCH_NAME(BOTTOM[s] + lo) + '–' + PITCH_NAME(BOTTOM[s] + hi); }).join(' and ');
+}
+const INK = { treble: [-.398, 1.334], bass: [.101, .9], alto: [-.01, 1.012] };
+function clefSVG(list) {
+  const H = 72, parts = []; let x = 0;
+  for (const [st, fs] of list) {
+    const [lo, hi] = INK[st], base = H / 2 + (lo + hi) / 2 * fs;
+    parts.push(`<text x="${x}" y="${base.toFixed(1)}" font-size="${fs}" font-family="${F.music.replace(/"/g, "'")}" fill="currentColor">${GLYPH[st]}</text>`);
+    x += fs * (st === 'treble' ? .72 : .8);
+  }
+  return `<svg class="clefpic" viewBox="0 0 ${Math.ceil(x)} ${H}" aria-hidden="true">${parts.join('')}</svg>`;
+}
+const CLEF_SIZE = { treble: 40, bass: 56, alto: 52 };
+function syncSimple() {
+  const lv = currentLevel();
+  for (const k of ['easy', 'medium', 'hard']) $('level-' + k).checked = lv === k;
+  $('custom-note').hidden = lv !== 'custom';
+  if (isIvl()) {
+    $('desc-easy').textContent = 'Count the distance: 2nd to octave · keys C, G and F';
+    $('desc-medium').textContent = 'Major, minor and perfect · up to 3 ♯ or ♭';
+    $('desc-hard').textContent = 'Every quality: augmented, major, minor, perfect, diminished · all 15 keys';
+  } else {
+    $('desc-easy').textContent = 'Lines and spaces, ' + rangeText('easy');
+    $('desc-medium').textContent = 'Adds sharps and flats';
+    $('desc-hard').textContent = 'Sharps, flats and ledger lines, ' + rangeText('hard');
+  }
+  document.body.dataset.game = settings.game;
+  const piano = settings.answer !== 'names';
+  $('game-pic').innerHTML = piano ? PIANO_SVG : clefSVG([['treble', 40]]);
+  $('game-cap').textContent = piano ? 'Piano' : 'Note names';
+  $('game-tile').hidden = isIvl(); $('simple').classList.toggle('two', isIvl());
+  $('gametype-' + settings.game).checked = true;
+  if (!$('gp-notes-pic').firstChild) { $('gp-notes-pic').innerHTML = clefSVG([['treble', 26]]); $('gp-ivl-pic').innerHTML = IVL_SVG.replace('viewBox="0 0 76 56"', 'viewBox="14 4 48 48"'); }
+  renderKeyChips();
+  $('clef-pic').innerHTML = grand() ? clefSVG([['treble', 38], ['bass', 44]]) : clefSVG([[settings.clef, CLEF_SIZE[settings.clef]]]);
+  $('clef-cap').textContent = CLEF_TITLE[settings.clef];
+  $('mode-pic').innerHTML = MODE_ICON[settings.mode];
+  $('mode-cap').textContent = MODE_TITLE[settings.mode];
+}
+function flipTile(tile, change) {
+  if (reduceMotion) { change(); return; }
+  tile.classList.add('flip');
+  setTimeout(() => { change(); tile.classList.remove('flip'); }, 180);
+}
+$('game-tile').addEventListener('click', () => flipTile($('game-tile'), () => {
+  $('answer-' + (settings.answer === 'names' ? 'any' : 'names')).checked = true; drill = null; applySettings();
+}));
+$('clef-tile').addEventListener('click', () => flipTile($('clef-tile'), () => {
+  const next = CLEF_CYCLE[(CLEF_CYCLE.indexOf(settings.clef) + 1) % CLEF_CYCLE.length];
+  $('clef-' + next).checked = true; drill = null; applySettings();
+}));
+$('mode-tile').addEventListener('click', () => flipTile($('mode-tile'), () => {
+  const next = MODE_CYCLE[(MODE_CYCLE.indexOf(settings.mode) + 1) % MODE_CYCLE.length];
+  $('mode-' + next).checked = true; drill = null; applySettings();
+}));
+$('adv-btn').addEventListener('click', () => {
+  const open = $('advanced').hidden; $('advanced').hidden = !open;
+  $('adv-btn').setAttribute('aria-expanded', String(open));
+  try { localStorage.setItem('tidaltones:adv', open ? '1' : '0'); } catch {}
+});
+
+/* ---------- settings ---------- */
+const KEYS = ['clef', 'answer', 'labels', 'filter', 'acc', 'mode', 'names', 'ivl'];
+function applySettings() {
+  const f = $('settings');
+  for (const k of KEYS) { const el = f.querySelector(`input[name="${k}"]:checked`); if (el) settings[k] = el.value; }
+  store.set('harborlights:settings', settings);
+  $('mode-desc').textContent = MODE_DESC[settings.mode];
+  $('answer-desc').textContent = ANSWER_DESC[settings.answer];
+  $('labels-field').hidden = settings.answer === 'names';
+  drillIvls = null; attractKey = pickKey();
+  renderRanges(); resize(); notes = []; homeward = []; spawnT = .2; lastPick = null;
+  buildKeys(); syncPad(); syncSimple(); hud(); showBest();
+}
+function loadSettings(saved) {
+  Object.assign(settings, saved || {});
+  cleanRange();
+  if (!Array.isArray(settings.keys) || !settings.keys.filter(id => KEY_BY_ID[id]).length) settings.keys = KEY_PRESET.easy.slice();
+  settings.keys = settings.keys.filter(id => KEY_BY_ID[id]);
+  if (!['easy', 'medium', 'hard'].includes(settings.ivl)) settings.ivl = 'easy';
+  if (settings.game !== 'intervals') settings.game = 'notes';
+  for (const k of KEYS) { const el = document.getElementById(`${k}-${settings[k]}`); if (el) el.checked = true; }
+  syncSound();
+}
+function syncSound() { const b = $('sound-btn'); b.textContent = settings.sound ? 'Sound on' : 'Sound off'; b.setAttribute('aria-pressed', String(settings.sound)); }
+$('settings').addEventListener('change', e => {
+  if (e.target.name === 'gameType') settings.game = e.target.value;
+  if (e.target.name === 'level') applyLevel(e.target.value);
+  drill = null; applySettings();
+});
+$('sound-btn').addEventListener('click', () => { settings.sound = !settings.sound; ensureAudio(); syncSound(); store.set('harborlights:settings', settings); });
+$('ov-btn').addEventListener('click', () => ovActions[0]?.());
+$('ov-btn2').addEventListener('click', () => ovActions[1]?.());
+$('start-btn').addEventListener('click', launch);
+$('res-again').addEventListener('click', startGame);
+$('res-home').addEventListener('click', toHarbor);
+$('res-board').addEventListener('click', () => openBoard(lastRun));
+$('board-btn').addEventListener('click', () => { if (view() !== 'game') openBoard(null); });
+$('board-back').addEventListener('click', toHarbor);
+$('board-filters').addEventListener('change', renderBoard);
+$('board-scope').addEventListener('change', e => { if (e.target.name === 'bscope') { boardScope = e.target.value; loadBoard(); } });
+$('w-form').addEventListener('submit', submitWelcome);
+$('w-solo').addEventListener('change', e => { $('w-code').disabled = e.target.checked; if (e.target.checked) $('w-code').value = ''; });
+$('w-guest').addEventListener('click', playAsGuest);
+$('who-btn').addEventListener('click', () => { const p = getProfile(); if (!p) showWelcome(false); else showWho(p); });
+function showWho(p) {
+  if (view() === 'board') { showWelcome(true); return; }   // the stage (and its overlay) is hidden on the leaderboard
+  showOverlayWho(p);
+}
+function showOverlayWho(p) {
+  // a small chooser on the stage overlay: change class or switch student
+  if (view() === 'game' && game.running && !game.paused) pause(true);
+  showOverlay('Who\'s at the helm', displayName(p), p.classCode ? `Class: ${p.className} (code ${p.classCode})` : 'Not in a class: posting to the World board only.',
+    ['Switch student', () => { $('overlay').hidden = true; showWelcome(false); }], ['Change class', () => { $('overlay').hidden = true; showWelcome(true); }], '');
+}
+
+addEventListener('keydown', e => {
+  const inForm = e.target.closest && e.target.closest('#settings');
+  if (e.target.matches && e.target.matches('input[type="text"]')) return;
+  if (!$('welcome').hidden) return;
+  if (view() === 'board') { if (e.code === 'Escape') { e.preventDefault(); toHarbor(); } return; }
+  if (view() === 'splash') {
+    if (e.code === 'Space' && !inForm && !(e.target.closest && e.target.closest('button'))) { e.preventDefault(); launch(); }
+    return;
+  }
+  const dg = e.code.match(/^Digit([2-8])$/);
+  if (dg && isIvl() && game.running && !game.paused && !e.metaKey && !e.ctrlKey) {
+    e.preventDefault();
+    const n = +dg[1];
+    let id;
+    if (settings.ivl === 'easy') id = 'n' + n;
+    else if ([4, 5, 8].includes(n)) id = (e.altKey ? 'A' : e.shiftKey ? 'd' : 'P') + n;
+    else id = (e.shiftKey && e.altKey && settings.ivl === 'hard' ? 'd' : e.altKey && settings.ivl === 'hard' ? 'A' : e.shiftKey ? 'm' : 'M') + n;
+    answerIvl(id, $('keys').querySelector(`[data-ivl="${id}"]`));
+    return;
+  }
+  const m = isIvl() ? null : e.code.match(/^Key([A-G])$/);
+  if (m && game.running && !game.paused && !e.metaKey && !e.ctrlKey && settings.answer !== 'exact') {
+    e.preventDefault();
+    answer(LETTERS.indexOf(m[1]), e.shiftKey ? 1 : e.altKey ? -1 : 0);
+    return;
+  }
+  if (e.code === 'Escape' || e.code === 'KeyP') {
+    if (!game.running) return;
+    e.preventDefault(); pause(!game.paused); return;
+  }
+  if (e.code === 'KeyQ' && game.running && game.paused) { e.preventDefault(); quitToHarbor(); return; }
+  if (e.code === 'Space' && game.over && !(e.target.closest && e.target.closest('button'))) { e.preventDefault(); startGame(); }
+});
+document.addEventListener('visibilitychange', () => { if (document.hidden && game.running && !game.paused) pause(true); });
+new ResizeObserver(() => { if (Math.abs(stage.clientWidth - W) > 1) resize(); }).observe(stage);
+
+function boot(data) {
+  try { if (localStorage.getItem('tidaltones:adv') === '1') { $('advanced').hidden = false; $('adv-btn').setAttribute('aria-expanded', 'true'); } } catch {}
+  document.body.dataset.view = 'splash';
+  const saved = (data && data.settings) || store.get('harborlights:settings', null);
+  loadSettings(saved);
+  if (!saved) applyLevel('easy');
+  applySettings();
+  beam.x = W * .6; beam.y = H * .45;
+  document.fonts?.load(`40px "Noto Music"`, '\u{1D11E}\u{1D122}\u{1D121}♯♭').catch(() => {});
+  requestAnimationFrame(t => { last = t; frame(t); });
+  updateWho();
+  if (!getProfile() && !isGuest()) showWelcome(false); else refreshClass();
+}
+boot({});
+})();
+</script>
+</body>
+</html>

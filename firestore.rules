@@ -1,0 +1,173 @@
+rules_version = '2';
+
+// Firestore security rules for Mr. Milnes's music games:
+//   Rhythm Dictation Trainer  https://drkeyzzz.github.io/rhythm-trainer/
+//   Scale Quest               https://drkeyzzz.github.io/scale-quest/
+//   Tidal Tones               https://drkeyzzz.github.io/tidal-tones/
+// All the games share this project, its classes and teacher sign-in.
+// The SAME file lives in every game's GitHub repo; keep them identical.
+// Paste this into Firebase → Firestore Database → Rules, then click Publish.
+// The admin email below can manage the World leaderboard (every score).
+// Any teacher who signs in with Google can create classes and manage only their own.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    function isAdmin() {
+      return signedIn() && request.auth.token.email in ['milnesda@eht.k12.nj.us'];
+    }
+    function ownsClass(code) {
+      return signedIn() && code != ''
+        && exists(/databases/$(database)/documents/classes/$(code))
+        && get(/databases/$(database)/documents/classes/$(code)).data.ownerEmail == request.auth.token.email;
+    }
+
+    // Classes: anyone can look up a code; teachers manage their own.
+    match /classes/{code} {
+      allow read: if true;
+
+      allow create: if signedIn()
+        && code.matches('^[A-Z0-9]{4,7}$')   // random 5-character codes, or a teacher's own 4–7 character code
+        && request.resource.data.keys().hasOnly(['name', 'ownerEmail', 'created_at', 'assignment', 'scale_assignment'])
+        && request.resource.data.ownerEmail == request.auth.token.email
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 40
+        && request.resource.data.created_at == request.time;
+
+      allow update: if signedIn()
+        && resource.data.ownerEmail == request.auth.token.email
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'assignment', 'scale_assignment'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 40;
+
+      allow delete: if signedIn() && (resource.data.ownerEmail == request.auth.token.email || isAdmin());
+    }
+
+    // Practice progress: one summary per student per day. Students write their own;
+    // only the class's teacher (or the admin) can read it.
+    match /progress/{docId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.owner == request.auth.token.email);
+
+      allow create, update: if request.resource.data.keys().hasOnly(['class_code', 'owner', 'date', 'sid', 'student', 'rhythms', 'slots', 'correct', 'adj', 'plays', 'extra', 'pool', 'minutes', 'first_at', 'last_at', 'score', 'goal', 'skills', 'ts', 'levels', 'missed', 'challenges', 'updated_at'])
+        && request.resource.data.class_code is string
+        && exists(/databases/$(database)/documents/classes/$(request.resource.data.class_code))
+        && get(/databases/$(database)/documents/classes/$(request.resource.data.class_code)).data.ownerEmail == request.resource.data.owner
+        && docId == request.resource.data.class_code + '_' + request.resource.data.date + '_' + request.resource.data.sid
+        && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && request.resource.data.sid.matches('^[a-z]{2,16}$')
+        && request.resource.data.student is string && request.resource.data.student.size() <= 24
+        && request.resource.data.rhythms is int && request.resource.data.rhythms >= 0 && request.resource.data.rhythms <= 5000
+        && request.resource.data.minutes is int && request.resource.data.minutes >= 0 && request.resource.data.minutes <= 1440
+        && request.resource.data.score is int && request.resource.data.score >= 0 && request.resource.data.score <= 100
+        && request.resource.data.updated_at == request.time;
+
+      allow delete: if isAdmin() || (signedIn() && resource.data.owner == request.auth.token.email);
+    }
+
+    // Scores: anyone can see them and add one in the right shape; nobody can edit them.
+    match /rhythm_scores/{scoreId} {
+      allow read: if true;
+
+      allow create: if request.resource.data.keys().hasOnly(['name', 'level', 'class_code', 'score', 'correct', 'total', 'extra_listens', 'time_sec', 'created_at'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 2 && request.resource.data.name.size() <= 24
+        && request.resource.data.level in ['easy', 'hard', 'extreme']
+        && request.resource.data.get('class_code', '') is string
+        && (request.resource.data.get('class_code', '') == ''
+            || exists(/databases/$(database)/documents/classes/$(request.resource.data.class_code)))
+        && request.resource.data.score is number
+        && request.resource.data.score >= 0 && request.resource.data.score <= 100
+        && request.resource.data.correct is int && request.resource.data.total is int
+        && request.resource.data.correct >= 0 && request.resource.data.correct <= request.resource.data.total
+        && request.resource.data.total >= 1 && request.resource.data.total <= 200
+        && request.resource.data.extra_listens is int
+        && request.resource.data.extra_listens >= 0 && request.resource.data.extra_listens <= 100
+        && request.resource.data.time_sec is int
+        && request.resource.data.time_sec >= 1 && request.resource.data.time_sec <= 36000
+        && request.resource.data.created_at == request.time;
+
+      allow update: if false;
+
+      // The admin can delete any score; a teacher can delete scores in their own classes.
+      allow delete: if isAdmin() || ownsClass(resource.data.get('class_code', ''));
+    }
+  
+
+    // ================= Scale Quest =================
+    // CHAOS scores: anyone can see them and add a finished 20-question run; nobody can edit them.
+    match /scale_scores/{scoreId} {
+      allow read: if true;
+      allow create: if scaleScore(request.resource.data);
+      allow update: if false;
+      allow delete: if isAdmin() || ownsClass(resource.data.get('class_code', ''));
+    }
+
+    // Practice progress: one summary per student per day. Only the class's teacher (or the admin) can read it.
+    match /scale_progress/{docId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.owner == request.auth.token.email);
+
+      allow create, update: if request.resource.data.keys().hasOnly(['class_code', 'owner', 'date', 'sid', 'student', 'questions', 'correct', 'minutes', 'first_at', 'last_at', 'goal', 'by_key', 'types', 'missed', 'chaos', 'best_chaos', 'updated_at'])
+        && request.resource.data.class_code is string
+        && exists(/databases/$(database)/documents/classes/$(request.resource.data.class_code))
+        && get(/databases/$(database)/documents/classes/$(request.resource.data.class_code)).data.ownerEmail == request.resource.data.owner
+        && docId == request.resource.data.class_code + '_' + request.resource.data.date + '_' + request.resource.data.sid
+        && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && request.resource.data.sid.matches('^[a-z]{2,16}$')
+        && request.resource.data.student is string && request.resource.data.student.size() <= 24
+        && request.resource.data.questions is int && request.resource.data.questions >= 0 && request.resource.data.questions <= 10000
+        && request.resource.data.correct is int && request.resource.data.correct >= 0 && request.resource.data.correct <= request.resource.data.questions
+        && request.resource.data.minutes is int && request.resource.data.minutes >= 0 && request.resource.data.minutes <= 1440
+        && request.resource.data.updated_at == request.time;
+
+      allow delete: if isAdmin() || (signedIn() && resource.data.owner == request.auth.token.email);
+    }
+
+    // A finished 20-question CHAOS run: score = points × key bonus (1.0 + 0.1 per extra key).
+    function scaleScore(d) {
+      return d.keys().hasOnly(['name', 'class_code', 'score', 'points', 'streak', 'accuracy', 'questions', 'key_count', 'key_list', 'created_at'])
+        && d.name is string && d.name.size() >= 2 && d.name.size() <= 24
+        && d.get('class_code', '') is string
+        && (d.get('class_code', '') == '' || exists(/databases/$(database)/documents/classes/$(d.class_code)))
+        && d.questions == 20
+        && d.key_count is int && d.key_count >= 1 && d.key_count <= 15
+        && d.points is int && d.points >= 0 && d.points <= 4650
+        && d.score is int
+        && d.score >= d.points * (9 + d.key_count) / 10 - 1
+        && d.score <= d.points * (9 + d.key_count) / 10 + 1
+        && d.streak is int && d.streak >= 0 && d.streak <= 20
+        && d.accuracy is int && d.accuracy >= 0 && d.accuracy <= 100
+        && d.key_list is string && d.key_list.size() <= 60
+        && d.created_at == request.time;
+    }
+  
+
+    // ================= Tidal Tones =================
+    // Leaderboard runs: anyone can see them and add one in the right shape; nobody can edit them.
+    match /tidal_scores/{scoreId} {
+      allow read: if true;
+      allow create: if tidalScore(request.resource.data);
+      allow update: if false;
+      allow delete: if isAdmin() || ownsClass(resource.data.get('class_code', ''));
+    }
+
+    function tidalScore(d) {
+      return d.keys().hasOnly(['name', 'class_code', 'score', 'hits', 'acc', 'level', 'mode', 'diff', 'clef', 'answer', 'names', 'created_at'])
+        && d.name is string && d.name.size() >= 2 && d.name.size() <= 24
+        && d.get('class_code', '') is string
+        && (d.get('class_code', '') == '' || exists(/databases/$(database)/documents/classes/$(d.class_code)))
+        && d.score is int && d.score >= 0 && d.score <= 2000000
+        && d.hits is int && d.hits >= 0 && d.hits <= 10000
+        && d.acc is int && d.acc >= 0 && d.acc <= 100
+        && d.level is int && d.level >= 0 && d.level <= 1000
+        && d.mode in ['arcade', 'sprint']
+        && d.diff in ['easy', 'medium', 'hard', 'custom']
+        && d.clef in ['treble', 'bass', 'alto', 'grand']
+        && d.answer in ['names', 'any', 'exact', 'intervals']
+        && d.names in ['letters', 'solfege']
+        && d.created_at == request.time;
+    }
+  }
+}
