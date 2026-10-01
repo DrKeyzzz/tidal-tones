@@ -101,6 +101,16 @@ body[data-game="intervals"] .notes-only, body:not([data-game="intervals"]) .ivl-
 #sound-btn { view-transition-name: hl-sound; }
 .row.center { justify-content: center; }
 .top-actions { display: flex; gap: 8px; align-items: center; }
+#midi-btn { display: inline-flex; align-items: center; gap: 7px; }
+#midi-btn i { width: 8px; height: 8px; border-radius: 50%; background: var(--rope); margin-top: -2px; }
+#midi-btn[data-state="ready"] { color: var(--moon); border-color: var(--safe); }
+#midi-btn[data-state="ready"] i { background: var(--safe); box-shadow: 0 0 8px var(--safe); }
+#midi-btn[data-state="none"] i, #midi-btn[data-state="asking"] i { background: var(--lamp); }
+#midi-btn[data-state="blocked"] i, #midi-btn[data-state="unsupported"] i { background: var(--flare); }
+#midi-btn.ping i { animation: ping .25s ease; }
+@keyframes ping { 50% { transform: scale(1.9); } }
+.midi-note { flex-basis: 100%; margin: 0; font-size: 13px; color: var(--mist); }
+.midi-note b { color: var(--moon); }
 body[data-view="game"] #board-btn { display: none; }
 
 .board { display: flex; flex-direction: column; gap: 18px; }
@@ -289,6 +299,7 @@ legend { font-size: 12px; font-weight: 700; letter-spacing: .18em; text-transfor
     </div>
     <div class="top-actions">
       <button class="iconbtn who" id="who-btn" type="button" title="Switch student or class">👤 Sign in</button>
+      <button class="iconbtn" id="midi-btn" type="button" data-state="off" aria-describedby="midi-note"><i></i><span id="midi-label">MIDI keyboard</span></button>
       <button class="iconbtn" id="board-btn" type="button">Leaderboard</button>
       <button class="iconbtn" id="sound-btn" type="button" aria-pressed="true">Sound on</button>
     </div>
@@ -442,6 +453,7 @@ legend { font-size: 12px; font-weight: 700; letter-spacing: .18em; text-transfor
       <button class="btn big" id="start-btn" type="button">Light the lamp</button>
       <span class="muted">or press <kbd>Space</kbd></span>
       <span class="best-note">Best with these settings: <b id="setup-best">0</b></span>
+      <p class="midi-note" id="midi-note">Have a MIDI keyboard? Plug it in and press <b>MIDI keyboard</b> at the top of the page.</p>
     </div>
   </form>
 
@@ -1102,6 +1114,63 @@ function answer(li, acc) {
   if (settings.answer !== 'names') flashPiano(ok ? pianoKeysFor(midiOf(n), false) : pianoKeysFor(12 * 5 + SEMI[li] + (want ? acc : 0), false), ok ? 'hit' : 'miss');
   settle(n, ok, nameOf({ d: li, acc: want ? acc : 0 }, false));
 }
+/* ---------- MIDI keyboard input (Web MIDI; note-on messages only) ---------- */
+let midiAccess = null, midiState = 'off', midiNames = [];
+const MIDI_TEXT = {
+  off: ['MIDI keyboard', 'Have a MIDI keyboard? Plug it in and press <b>MIDI keyboard</b> at the top of the page.'],
+  asking: ['Connecting…', 'Allow MIDI access if your browser asks.'],
+  none: ['No keyboard', 'MIDI is on, but no keyboard is connected. Plug one in by USB; it will be found automatically.'],
+  ready: ['MIDI', ''],
+  blocked: ['MIDI blocked', 'This page is not allowed to use MIDI. Open Tidal Tones directly at its own web address in Chrome or Edge, and allow MIDI when asked.'],
+  unsupported: ['No MIDI here', 'This browser does not support MIDI keyboards. Use Chrome or Edge on a computer or Chromebook. On an iPad, open the game in the Web MIDI Browser app.']
+};
+async function connectMidi() {
+  if (midiAccess) { attachMidi(); return; }
+  if (!navigator.requestMIDIAccess) { midiState = 'unsupported'; syncMidi(); return; }
+  midiState = 'asking'; syncMidi();
+  try {
+    midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+    midiAccess.onstatechange = attachMidi;
+    attachMidi();
+    try { localStorage.setItem('tidaltones:midi', '1'); } catch {}
+  } catch { midiState = 'blocked'; syncMidi(); }
+}
+function attachMidi() {
+  const ins = [...midiAccess.inputs.values()].filter(i => i.state !== 'disconnected');
+  ins.forEach(i => { i.onmidimessage = onMidi; });
+  midiNames = ins.map(i => i.name || 'MIDI keyboard');
+  midiState = ins.length ? 'ready' : 'none'; syncMidi();
+}
+function syncMidi() {
+  const b = $('midi-btn'), [label, note] = MIDI_TEXT[midiState];
+  b.dataset.state = midiState;
+  $('midi-label').textContent = midiState === 'ready' ? 'MIDI: ' + midiNames[0].slice(0, 22) : label;
+  $('midi-note').innerHTML = midiState === 'ready'
+    ? `<b>${midiNames.map(n => n.replace(/[<>&]/g, '')).join(', ')}</b> is connected. Play the notes on your keyboard${isIvl() ? ' (intervals still use the on-screen pad)' : settings.answer === 'exact' ? ' in the exact octave' : ' in any octave'}.`
+    : note;
+  if (view() === 'game') syncPad();
+}
+function onMidi(e) {
+  const [st, note, vel] = e.data;
+  if ((st & 0xf0) !== 0x90 || !vel) return;                         // note-on only
+  const b = $('midi-btn'); b.classList.remove('ping'); void b.offsetWidth; b.classList.add('ping');
+  if (view() === 'game' && game.running && !game.paused && !isIvl()) answerMidi(note);
+}
+// MIDI answers by pitch, so either spelling of a black key counts (like the on-screen piano)
+const PC_SPELL = [[0, 0], [0, 1], [1, 0], [1, 1], [2, 0], [3, 0], [3, 1], [4, 0], [4, 1], [5, 0], [5, 1], [6, 0]];
+function answerMidi(m) {
+  if (!canAnswer()) return;
+  const n = notes[0], target = midiOf(n), exact = settings.answer === 'exact';
+  const ok = exact ? m === target : ((m - target) % 12 + 12) % 12 === 0;
+  if (settings.answer !== 'names') {
+    const keys = pianoKeysFor(m, true);
+    flashPiano(keys.length ? keys : pianoKeysFor(m, false), ok ? 'hit' : 'miss');
+  } else if (ok) flashKey(letterIdx(n.d), n.acc, true);
+  else { const [li, acc] = PC_SPELL[((m % 12) + 12) % 12]; flashKey(li, acc, false); }
+  settle(n, ok, midiName(m, exact));
+}
+$('midi-btn').addEventListener('click', connectMidi);
+
 function answerPiano(midi, el) {
   if (!canAnswer()) return;
   const n = notes[0], target = midiOf(n);
@@ -1575,6 +1644,7 @@ function syncPad() {
     : settings.answer === 'exact'
     ? 'Click or tap the exact key · the dot marks middle C · <kbd>Esc</kbd> to pause or quit'
     : 'Keyboard: <kbd>A</kbd>–<kbd>G</kbd> to answer' + (acc ? ' · hold <kbd>Shift</kbd> for ♯, <kbd>Alt</kbd>/<kbd>Option</kbd> for ♭' : '') + ' · <kbd>Esc</kbd> to pause or quit';
+  if (midiState === 'ready' && !isIvl()) $('hint').innerHTML = '<b style="color:var(--safe)">MIDI keyboard on</b> · ' + $('hint').innerHTML;
 }
 
 /* ---------- range picker ---------- */
@@ -1851,6 +1921,7 @@ function boot(data) {
   requestAnimationFrame(t => { last = t; frame(t); });
   updateWho();
   if (!getProfile() && !isGuest()) showWelcome(false); else refreshClass();
+  try { if (localStorage.getItem('tidaltones:midi') === '1') connectMidi(); } catch {}
 }
 boot({});
 })();
