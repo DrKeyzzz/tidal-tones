@@ -197,7 +197,7 @@ service cloud.firestore {
         && d.acc is int && d.acc >= 0 && d.acc <= 100
         && d.level is int && d.level >= 0 && d.level <= 1000
         && d.mode in ['arcade', 'sprint']
-        && d.diff in ['easy', 'medium', 'hard', 'custom']
+        && d.diff in ['easy', 'medium', 'hard', 'expert', 'custom']
         && d.clef in ['treble', 'bass', 'alto', 'grand']
         && d.answer in ['names', 'any', 'exact', 'intervals']
         && d.names in ['letters', 'solfege']

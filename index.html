@@ -60,7 +60,9 @@ body[data-game="intervals"] .notes-only, body:not([data-game="intervals"]) .ivl-
 .gamepick input:checked + label { border-color: var(--lamp); color: var(--lamp); background: color-mix(in srgb, var(--lamp) 12%, var(--deep)); box-shadow: inset 0 0 0 1px var(--lamp); }
 .gamepick input:focus-visible + label { outline: 2px solid var(--lamp); outline-offset: 2px; }
 .simple.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.diff { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.diff { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+body[data-game="intervals"] .diff { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 640px) { .diff, body[data-game="intervals"] .diff { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .diff input { position: absolute; opacity: 0; pointer-events: none; }
 .diff label { display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 14px 12px 12px; border: 1px solid var(--rope); border-radius: 14px; background: var(--deep); cursor: pointer; min-height: 96px; }
 .diff label b { font-family: var(--f-display); font-weight: 400; font-size: 24px; color: var(--moon); line-height: 1; }
@@ -343,6 +345,7 @@ legend { font-size: 12px; font-weight: 700; letter-spacing: .18em; text-transfor
         <input type="radio" name="level" id="level-easy" value="easy"><label for="level-easy"><b>Easy</b><span id="desc-easy"></span></label>
         <input type="radio" name="level" id="level-medium" value="medium"><label for="level-medium"><b>Medium</b><span id="desc-medium"></span></label>
         <input type="radio" name="level" id="level-hard" value="hard"><label for="level-hard"><b>Hard</b><span id="desc-hard"></span></label>
+        <input type="radio" name="level" id="level-expert" value="expert" class="notes-only"><label for="level-expert" class="notes-only"><b>Expert</b><span id="desc-expert"></span></label>
       </fieldset>
       <button type="button" class="tile" id="mode-tile" aria-label="Switch between levels, speed round and practice">
         <span class="pic" id="mode-pic"></span>
@@ -382,7 +385,7 @@ legend { font-size: 12px; font-weight: 700; letter-spacing: .18em; text-transfor
           <input type="radio" name="clef" id="clef-grand" value="grand"><label for="clef-grand">Grand</label>
         </div>
       </fieldset>
-      <fieldset class="ivl-only">
+      <fieldset id="keysig-field">
         <legend>Key signatures</legend>
         <div class="presets" id="key-presets">
           <button type="button" data-p="all">All</button>
@@ -517,6 +520,7 @@ legend { font-size: 12px; font-weight: 700; letter-spacing: .18em; text-transfor
           <input type="radio" name="bdiff" id="bdiff-easy" value="easy"><label for="bdiff-easy">Easy</label>
           <input type="radio" name="bdiff" id="bdiff-medium" value="medium"><label for="bdiff-medium">Medium</label>
           <input type="radio" name="bdiff" id="bdiff-hard" value="hard"><label for="bdiff-hard">Hard</label>
+          <input type="radio" name="bdiff" id="bdiff-expert" value="expert"><label for="bdiff-expert">Expert</label>
           <input type="radio" name="bdiff" id="bdiff-custom" value="custom"><label for="bdiff-custom">Custom</label>
         </div>
       </fieldset>
@@ -613,7 +617,7 @@ const C = { moon: css('--moon'), lamp: css('--lamp'), flare: css('--flare'), saf
 const F = { music: css('--f-music'), ui: css('--f-ui'), display: css('--f-display') };
 
 const DEFAULT_RANGE = () => ({ treble: [0, 8], bass: [0, 8], alto: [0, 8] });
-const settings = { clef: 'treble', range: DEFAULT_RANGE(), answer: 'names', labels: 'c', game: 'notes', ivl: 'easy', keys: ['C', 'G', 'F'], filter: 'all', acc: 'off', mode: 'arcade', names: 'letters', sound: true };
+const settings = { clef: 'treble', range: DEFAULT_RANGE(), answer: 'names', labels: 'c', game: 'notes', ivl: 'easy', keys: ['C', 'G', 'F'], expert: false, filter: 'all', acc: 'off', mode: 'arcade', names: 'letters', sound: true };
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
@@ -633,12 +637,12 @@ function bottomY(staff) {
 const yOf = (staff, p) => bottomY(staff) - p * g / 2;
 const staffLeft = () => 3.1 * g;
 const isIvl = () => settings.game === 'intervals';
-const maxSig = () => isIvl() ? Math.max(0, ...settings.keys.map(id => Math.abs(KEY_BY_ID[id].sig))) : 0;
+const maxSig = () => isIvl() ? Math.max(0, ...settings.keys.map(id => Math.abs(KEY_BY_ID[id].sig))) : expertOn() ? Math.max(0, ...expertKeys().map(id => Math.abs(KEY_BY_ID[id].sig))) : 0;
 const reefX = () => (7.8 + (maxSig() ? maxSig() * .95 + .4 : 0)) * g;                                  // the rocks: a boat that reaches here is lost
 const seaY = () => H - 2 * g;                                 // waterline of the band below the staff
 const lampPos = () => ({ x: 1.55 * g, y: sky + 1.6 * g });
 const spawnX = () => W + 2.5 * g;
-const endX = n => reefX() + ((n.kind === 'ivl' ? n.showAcc != null : n.acc) ? 2.4 : 1.3) * g;
+const endX = n => reefX() + ((n.kind === 'ivl' ? n.showAcc != null : n.keyed ? n.shown != null : n.acc) ? 2.4 : 1.3) * g;
 const noteX = n => spawnX() - n.u * (spawnX() - endX(n));
 
 function resize() {
@@ -729,8 +733,18 @@ function candidates() {
 }
 let attractKey = 'C', drillIvls = null, lastIvl = null;
 const activeKey = () => KEY_BY_ID[(game.running && game.key) || attractKey] || KEY_BY_ID.C;
+/* ---------- Expert (Note reading): Hard for levels 1-3, then a new key signature every level ----------
+   Keys stop at 5 sharps or flats: beyond that the music needs E♯, B♯, C♭ or F♭, which the answer pad doesn't have. */
+const expertOn = () => !isIvl() && settings.expert;
+const keyedNow = () => expertOn() && game.running && game.keyOn;
+const expertKeys = () => { const k = settings.keys.filter(id => KEY_BY_ID[id] && Math.abs(KEY_BY_ID[id].sig) <= 5); return k.length ? k : ['C', 'G', 'D', 'F', 'Bb']; };
+const EXPERT_FROM = 4, EXPERT_SPLASH = 2, EXPERT_FADE = .8;
+function keySplash(sub) {
+  banner = { text: 'Key of ' + keyName(game.key) + ' major', sub, life: EXPERT_SPLASH + EXPERT_FADE, max: EXPERT_SPLASH + EXPERT_FADE, fade: EXPERT_FADE };
+  beam.glow = 1; spawnT = 0; game.hold = EXPERT_SPLASH;            // the next boat sets out as the splash starts to fade
+}
 function pickKey(avoid) {
-  const ks = settings.keys.filter(id => KEY_BY_ID[id]);
+  const ks = expertOn() ? expertKeys() : settings.keys.filter(id => KEY_BY_ID[id]);
   const pool = ks.length > 1 ? ks.filter(id => id !== avoid) : ks;
   return pool[Math.floor(Math.random() * pool.length)] || 'C';
 }
@@ -776,7 +790,15 @@ function makeNote() {
     if (FLAT_OK[li]) opts.push(-1);
     acc = opts.length && Math.random() < .6 ? opts[Math.floor(Math.random() * opts.length)] : 0;
   }
-  return { staff: pick.staff, p: pick.p, d: BOTTOM[pick.staff] + pick.p, acc, u: 0, flash: 0, jit: 0, bob: Math.random() * 6, sail: Math.random() < .5 };
+  const note = { staff: pick.staff, p: pick.p, d: BOTTOM[pick.staff] + pick.p, acc, u: 0, flash: 0, jit: 0, bob: Math.random() * 6, sail: Math.random() < .5 };
+  if (keyedNow()) {
+    // in a key: most notes follow the signature (no accidental); about 4 in 10 are altered with a written ♮, ♯ or ♭
+    const key = activeKey(), li = letterIdx(note.d), inKey = keyAccFor(key, li);
+    const alt = [-1, 0, 1].filter(a => a !== inKey && (a === 0 || (a === 1 ? SHARP_OK[li] : FLAT_OK[li])));
+    note.acc = drill ? acc : (alt.length && Math.random() < .4 ? alt[Math.floor(Math.random() * alt.length)] : inKey);
+    note.keyed = true; note.key = key.id; note.shown = note.acc !== inKey ? note.acc : null;
+  }
+  return note;
 }
 const needsAcc = () => settings.acc === 'on' || (drill && drill.some(d => d.acc !== 0));
 
@@ -798,7 +820,7 @@ function roomToSpawn() {
   return !last || spawnX() - noteX(last) > 4.4 * g;
 }
 
-const bestKey = () => ['harborlights', settings.mode, settings.clef, staves().map(s => settings.range[s].join('_')).join('~'), settings.filter, settings.acc, settings.answer].join(':') + (isIvl() ? ':ivl:' + settings.ivl + ':' + settings.keys.slice().sort().join('.') : '');
+const bestKey = () => ['harborlights', settings.mode, settings.clef, staves().map(s => settings.range[s].join('_')).join('~'), settings.filter, settings.acc, settings.answer].join(':') + (expertOn() ? ':expert:' + expertKeys().slice().sort().join('.') : '') + (isIvl() ? ':ivl:' + settings.ivl + ':' + settings.keys.slice().sort().join('.') : '');
 
 function startGame() {
   ensureAudio();
@@ -806,9 +828,10 @@ function startGame() {
   notes = []; homeward = []; floaters = []; particles = []; spawnT = .5; lastPick = null;
   $('overlay').hidden = true; $('results').hidden = true;
   syncPad(); hud();
-  game.key = pickKey(); game.keyPending = false; game.pendingSplash = null; game.sinceKey = 0; lastIvl = null;
+  game.key = pickKey(); game.keyPending = false; game.pendingSplash = null; game.sinceKey = 0; lastIvl = null; game.keyOn = false; game.hold = 0;
   tideUp();
-  if (settings.mode === 'arcade') levelSplash(1, isIvl() ? keySub() : null);
+  if (expertOn() && settings.mode !== 'arcade') { game.keyOn = true; keySplash('Read the key signature'); }
+  else if (settings.mode === 'arcade') levelSplash(1, isIvl() ? keySub() : expertOn() ? 'New keys from level ' + EXPERT_FROM : null);
   else if (isIvl() && settings.ivl === 'easy') banner = { text: keyName(game.key).toUpperCase() + ' MAJOR', sub: 'Keep the lamp lit', life: SPLASH };
 }
 
@@ -839,7 +862,7 @@ function endGame() {
   for (const s of trouble) {
     const el = document.createElement('span');
     if (s.ivlKey) { el.innerHTML = `${s.label}<em>missed ${s.miss}×</em>`; tb.appendChild(el); continue; }
-    el.innerHTML = `${nameOf(s)}${multiStaff ? ' <span class="staffname">' + s.staff + '</span>' : ''}<em>missed ${s.miss}×</em>`;
+    el.innerHTML = `${nameOf(s)}${s.key ? ' <span class="staffname">in ' + keyName(s.key) + ' major</span>' : ''}${multiStaff ? ' <span class="staffname">' + s.staff + '</span>' : ''}<em>missed ${s.miss}×</em>`;
     tb.appendChild(el);
   }
   $('res-drill').hidden = !trouble.length;
@@ -940,7 +963,7 @@ async function refreshClass() {
 }
 
 let boardAll = [], boardState = 'loading', boardScope = 'world', lastRun = null, savedRunId = null, saving = false;
-const DIFF_TITLE = { easy: 'Easy', medium: 'Medium', hard: 'Hard', custom: 'Custom' };
+const DIFF_TITLE = { easy: 'Easy', medium: 'Medium', hard: 'Hard', expert: 'Expert', custom: 'Custom' };
 const ANSWER_TITLE = { names: 'Note names', any: 'Piano', exact: 'Piano exact', intervals: 'Intervals' };
 const CLEF_SHORT = { treble: 'Treble', bass: 'Bass', alto: 'Alto', grand: 'Grand staff' };
 const toRow = d => { const r = d.data(); return { ...r, id: d.id, at: r.created_at && r.created_at.toDate ? r.created_at.toDate().toISOString() : new Date().toISOString() }; };
@@ -1055,7 +1078,7 @@ function openBoard(run) {
 }
 function goTo(v, then) {
   const apply = () => { document.body.dataset.view = v; if (then) then(); resize(); window.scrollTo({ top: 0 }); };
-  if (document.startViewTransition && !reduceMotion) document.startViewTransition(apply); else apply();
+  if (document.startViewTransition && !reduceMotion) { const t = document.startViewTransition(apply); t.ready?.catch(() => {}); t.finished?.catch(() => {}); } else apply();
 }
 function launch() {
   if (view() === 'game') return;
@@ -1077,19 +1100,33 @@ function record(n, ok) {
     if (ok) s.seen++; else s.miss++;
     return;
   }
-  const k = n.staff + ':' + n.d + ':' + n.acc;
-  const s = game.stats[k] || (game.stats[k] = { staff: n.staff, p: n.p, d: n.d, acc: n.acc, seen: 0, miss: 0 });
+  const k = n.staff + ':' + n.d + ':' + n.acc + (n.keyed ? ':' + n.key : '');
+  const s = game.stats[k] || (game.stats[k] = { staff: n.staff, p: n.p, d: n.d, acc: n.acc, key: n.keyed ? n.key : null, seen: 0, miss: 0 });
   if (ok) s.seen++; else s.miss++;
 }
 
 // speed round and practice change key every 6 boats; Levels changes key with each new level
 function boatDone() {
+  if (expertOn()) {
+    game.sinceKey = (game.sinceKey || 0) + 1;
+    if (settings.mode !== 'arcade' && game.sinceKey >= 8 && expertKeys().length > 1) game.keyPending = true;
+    return;
+  }
   if (!isIvl()) return;
   game.sinceKey = (game.sinceKey || 0) + 1;
   if (settings.mode !== 'arcade' && game.sinceKey >= 6 && settings.keys.length > 1) game.keyPending = true;
 }
 const keySub = () => settings.ivl === 'easy' ? keyName(game.key) + ' major' : 'New key signature';
 function applyPendingKey() {
+  if (expertOn()) {
+    const first = !game.keyOn;
+    // the first key of the game has a signature when there is one to choose
+    let k = pickKey(game.key);
+    if (first && KEY_BY_ID[k].sig === 0) { const withSig = expertKeys().filter(id => KEY_BY_ID[id].sig !== 0); if (withSig.length) k = withSig[Math.floor(Math.random() * withSig.length)]; }
+    game.key = k; game.keyOn = true; game.keyPending = false; game.sinceKey = 0;
+    keySplash(game.pendingSplash ? 'Level ' + game.pendingSplash : 'Change of key'); game.pendingSplash = null;
+    return;
+  }
   game.key = pickKey(game.key); game.keyPending = false; game.sinceKey = 0;
   if (game.pendingSplash) { levelSplash(game.pendingSplash, keySub()); game.pendingSplash = null; }
   else banner = { text: settings.ivl === 'easy' ? keyName(game.key).toUpperCase() + ' MAJOR' : 'NEW KEY', sub: settings.ivl === 'easy' ? 'Change of key' : 'Read the key signature', life: SPLASH };
@@ -1221,7 +1258,8 @@ function settle(n, ok, guessText) {
     record(n, true);
     if (settings.mode === 'arcade' && game.hits % 8 === 0) {
       game.level++; tideUp();
-      if (isIvl() && settings.keys.length > 1) { game.keyPending = true; game.pendingSplash = game.level; }
+      if (expertOn() && game.level >= EXPERT_FROM) { game.keyPending = true; game.pendingSplash = game.level; }
+      else if (isIvl() && settings.keys.length > 1) { game.keyPending = true; game.pendingSplash = game.level; }
       else levelSplash(game.level);
     }
     boatDone();
@@ -1270,7 +1308,9 @@ function update(dt) {
   }
   spawnT -= dt;
   if (game.running && game.keyPending) {
-    if (!notes.length) { applyPendingKey(); spawnT = 1.2; }
+    if (!notes.length) { applyPendingKey(); if (!expertOn()) spawnT = 1.2; }
+  } else if (game.running && game.hold > 0) {
+    game.hold -= dt;                                              // the Key of … splash holds the water clear
   } else if (game.running && settings.mode === 'sprint') {
     // one boat at a time; the next one appears already in view the instant the last is gone
     if (!notes.length) { const n = makeNote(); n.u = Math.min(.5, (spawnX() - (W - 3 * g)) / (spawnX() - endX(n))); n.born = game.elapsed; notes.push(n); }
@@ -1331,11 +1371,11 @@ function draw() {
     ctx.fillStyle = f.color; ctx.fillText(f.text, x, f.y);
   }
   if (banner) {
-    const age = SPLASH - banner.life;                            // seconds since the splash appeared
+    const age = (banner.max || SPLASH) - banner.life;            // seconds since the splash appeared
     const pop = reduceMotion ? 1 : Math.min(1, age / .25);
     const scale = reduceMotion ? 1 : .6 + .4 * (1 - Math.pow(1 - pop, 3)) + (age < .35 ? Math.sin(age / .35 * Math.PI) * .08 : 0);
     const cx = (reefX() + W) / 2, cy = H * .42;
-    ctx.globalAlpha = Math.min(1, banner.life * 2.2, pop * 1.5);
+    ctx.globalAlpha = Math.min(1, banner.life / (banner.fade || .45), pop * 1.5);
     ctx.save(); ctx.translate(cx, cy); ctx.scale(scale, scale);
     ctx.font = `${Math.min(g * 4.2, W / 7)}px ${F.display}`;
     ctx.lineWidth = 10; ctx.lineJoin = 'round'; ctx.strokeStyle = C.deep; ctx.strokeText(banner.text, 0, 0);
@@ -1436,7 +1476,7 @@ function drawStaves() {
     ctx.globalAlpha = .95; ctx.fillStyle = C.moon;
     ctx.font = `${4 * g}px ${F.music}`; ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
     ctx.fillText(GLYPH[st], staffLeft() + .35 * g, yOf(st, 0) - CLEF_LIFT[st] * g);   // Noto Music: 1em = staff height, baseline on the bottom line
-    if (isIvl()) drawKeySig(st, activeKey());
+    if (isIvl() || keyedNow()) drawKeySig(st, activeKey());
   }
   ctx.globalAlpha = .6;
   const s = staves();
@@ -1470,10 +1510,11 @@ function drawBoat(n, x, col, home) {
   if (n.p < 4) { ctx.moveTo(x + g * .56, y - g * .1); ctx.lineTo(x + g * .56, y - 3.4 * g); }
   else { ctx.moveTo(x - g * .56, y + g * .1); ctx.lineTo(x - g * .56, y + 3.4 * g); }
   ctx.stroke();
-  if (n.acc) {
-    // same staff-sized em as the clefs; offsets centre the sharp's body / the flat's bowl on the note
+  const written = n.keyed ? n.shown : (n.acc || null);
+  if (written != null) {
+    // same staff-sized em as the clefs; offsets centre each accidental on the note (natural signs only appear in a key)
     ctx.font = `${4 * g}px ${F.music}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-    ctx.fillText(ACC_GLYPH[n.acc], x - 1.75 * g, n.acc === 1 ? y + .52 * g : y + .4 * g);
+    ctx.fillText(ANY_ACC[written], x - 1.75 * g, y + ACC_DROP[written] * g);
   }
   ctx.restore();
 }
@@ -1755,14 +1796,16 @@ function currentLevel() {
   const all = s => ['treble', 'bass', 'alto'].every(st => same(settings.range[st], s(st)));
   if (settings.acc === 'off' && all(() => [0, 8])) return 'easy';
   if (settings.acc === 'on' && all(() => [0, 8])) return 'medium';
-  if (settings.acc === 'on' && all(st => LEDGER[st])) return 'hard';
+  if (settings.acc === 'on' && all(st => LEDGER[st])) return settings.expert ? 'expert' : 'hard';
   return 'custom';
 }
 function applyLevel(lv) {
   if (isIvl()) { settings.ivl = lv; settings.keys = KEY_PRESET[lv].slice(); $('ivl-' + lv).checked = true; return; }
+  settings.expert = lv === 'expert';
   settings.acc = lv === 'easy' ? 'off' : 'on';
   settings.filter = 'all';
-  for (const st of ['treble', 'bass', 'alto']) settings.range[st] = lv === 'hard' ? LEDGER[st].slice() : [0, 8];
+  for (const st of ['treble', 'bass', 'alto']) settings.range[st] = lv === 'hard' || lv === 'expert' ? LEDGER[st].slice() : [0, 8];
+  if (lv === 'expert' && !settings.keys.some(id => KEY_BY_ID[id] && Math.abs(KEY_BY_ID[id].sig) <= 5 && KEY_BY_ID[id].sig !== 0)) settings.keys = MAJOR.filter(k => Math.abs(k.sig) <= 5).map(k => k.id);
   $('acc-' + settings.acc).checked = true; $('filter-all').checked = true;
 }
 function rangeText(lv) {
@@ -1782,7 +1825,9 @@ function clefSVG(list) {
 const CLEF_SIZE = { treble: 40, bass: 56, alto: 52 };
 function syncSimple() {
   const lv = currentLevel();
-  for (const k of ['easy', 'medium', 'hard']) $('level-' + k).checked = lv === k;
+  for (const k of ['easy', 'medium', 'hard', 'expert']) $('level-' + k).checked = lv === k;
+  $('keysig-field').hidden = !(isIvl() || settings.expert);
+  $('desc-expert').textContent = 'Like Hard, then a new key signature every level from level ' + EXPERT_FROM;
   $('custom-note').hidden = lv !== 'custom';
   if (isIvl()) {
     $('desc-easy').textContent = 'Count the distance: 2nd to octave · keys C, G and F';
