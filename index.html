@@ -737,13 +737,26 @@ const activeKey = () => KEY_BY_ID[(game.running && game.key) || attractKey] || K
    Keys stop at 5 sharps or flats: beyond that the music needs E♯, B♯, C♭ or F♭, which the answer pad doesn't have. */
 const expertOn = () => !isIvl() && settings.expert;
 const keyedNow = () => expertOn() && game.running && game.keyOn;
-const expertKeys = () => { const k = settings.keys.filter(id => KEY_BY_ID[id] && Math.abs(KEY_BY_ID[id].sig) <= 5); return k.length ? k : ['C', 'G', 'D', 'F', 'Bb']; };
+// C major is left out of Expert: with no signature there is nothing to read
+const expertKeys = () => { const k = settings.keys.filter(id => KEY_BY_ID[id] && KEY_BY_ID[id].sig !== 0 && Math.abs(KEY_BY_ID[id].sig) <= 5); return k.length ? k : ['G', 'D', 'A', 'F', 'Bb', 'Eb']; };
 const EXPERT_FROM = 4, EXPERT_SPLASH = 2, EXPERT_FADE = .8;
 function keySplash(sub) {
   banner = { text: 'Key of ' + keyName(game.key) + ' major', sub, life: EXPERT_SPLASH + EXPERT_FADE, max: EXPERT_SPLASH + EXPERT_FADE, fade: EXPERT_FADE };
   beam.glow = 1; spawnT = 0; game.hold = EXPERT_SPLASH;            // the next boat sets out as the splash starts to fade
 }
+// Expert deals keys from a shuffled deck: every selected key once before any repeats,
+// and a fresh deck never starts with the key that just finished
+function dealExpertKey(avoid) {
+  if (!game.keyBag || !game.keyBag.length) {
+    const deck = expertKeys().slice();
+    for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
+    if (deck.length > 1 && deck[deck.length - 1] === avoid) [deck[0], deck[deck.length - 1]] = [deck[deck.length - 1], deck[0]];
+    game.keyBag = deck;
+  }
+  return game.keyBag.pop();
+}
 function pickKey(avoid) {
+  if (expertOn() && game.running) return dealExpertKey(avoid);
   const ks = expertOn() ? expertKeys() : settings.keys.filter(id => KEY_BY_ID[id]);
   const pool = ks.length > 1 ? ks.filter(id => id !== avoid) : ks;
   return pool[Math.floor(Math.random() * pool.length)] || 'C';
@@ -828,7 +841,7 @@ function startGame() {
   notes = []; homeward = []; floaters = []; particles = []; spawnT = .5; lastPick = null;
   $('overlay').hidden = true; $('results').hidden = true;
   syncPad(); hud();
-  game.key = pickKey(); game.keyPending = false; game.pendingSplash = null; game.sinceKey = 0; lastIvl = null; game.keyOn = false; game.hold = 0;
+  game.keyBag = null; game.key = pickKey(); game.keyPending = false; game.pendingSplash = null; game.sinceKey = 0; lastIvl = null; game.keyOn = false; game.hold = 0;
   tideUp();
   if (expertOn() && settings.mode !== 'arcade') { game.keyOn = true; keySplash('Read the key signature'); }
   else if (settings.mode === 'arcade') levelSplash(1, isIvl() ? keySub() : expertOn() ? 'New keys from level ' + EXPERT_FROM : null);
