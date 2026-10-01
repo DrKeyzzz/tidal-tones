@@ -819,6 +819,7 @@ function endGame() {
   const mins = Math.max(game.elapsed, 1) / 60;
   let isBest = false;
   lastRun = (!drill && !drillIvls && settings.mode !== 'practice') ? { score: game.score, hits: game.hits, acc, level: settings.mode === 'arcade' ? game.level : null, mode: settings.mode, diff: currentLevel(), clef: settings.clef, answer: isIvl() ? 'intervals' : settings.answer, names: settings.names } : null;
+  if (lastRun) lastRun.wasGuest = isGuest();
   syncSaveBox(true);
   if (!drill && !drillIvls && !isGuest()) { const best = store.get(bestKey(), 0); if (game.score > best) { store.set(bestKey(), game.score); isBest = game.score > 0; } }
   $('res-score').textContent = game.score.toLocaleString();
@@ -1011,8 +1012,16 @@ function syncSaveBox(fresh) {
   if (fresh) { savedRunId = null; $('save-msg').textContent = ''; $('save-msg').className = 'msg'; btn.disabled = false; }
   box.hidden = !lastRun;
   if (box.hidden || savedRunId) return;
-  if (p) { $('save-who').textContent = `Post as ${displayName(p)}${p.classCode ? ' to ' + p.className + ' and the World board' : ' to the World board'}.`; btn.textContent = 'Save to leaderboard'; btn.onclick = saveRun; }
-  else { $('save-who').textContent = isGuest() ? "Guest game: this score isn't saved." : 'Sign in to save your score.'; btn.textContent = isGuest() ? 'Sign in for next time' : 'Sign in'; btn.onclick = () => showWelcome(false); }
+  // signed-in players' scores post automatically; the button only appears if a post fails, or to sign in
+  if (p) {
+    $('save-who').textContent = `Posting as ${displayName(p)}${p.classCode ? ' to ' + p.className + ' and the World board' : ' to the World board'}.`;
+    btn.textContent = 'Try again'; btn.onclick = saveRun; btn.hidden = true;
+    if (fresh || !lastRun.wasGuest) {
+      if (lastRun.hits > 0) saveRun();
+      else { $('save-who').textContent = 'No boats came home this time, so nothing was posted.'; }
+    } else $('save-who').textContent = `Signed in as ${displayName(p)}. That was a guest game, so it wasn't saved; your next game posts automatically.`;
+  }
+  else { $('save-who').textContent = isGuest() ? "Guest game: this score isn't saved." : 'Sign in to save your score.'; btn.textContent = isGuest() ? 'Sign in for next time' : 'Sign in'; btn.onclick = () => showWelcome(false); btn.hidden = false; }
 }
 async function saveRun() {
   const p = getProfile();
@@ -1025,6 +1034,7 @@ async function saveRun() {
     if (p.classCode) data.class_code = p.classCode;
     const ref = await wait(fs.addDoc(fs.collection(db, 'tidal_scores'), data));
     savedRunId = ref.id;
+    $('save-who').textContent = `Posted as ${displayName(p)}${p.classCode ? ' to ' + p.className + ' and the World board' : ' to the World board'}.`;
     const f = { mode: lastRun.mode, diff: lastRun.diff, clef: lastRun.clef, answer: lastRun.answer };
     const [world, cls] = await Promise.all([fetchRows('world'), p.classCode ? fetchRows('class') : null]);
     const w = boardRows(f, world).findIndex(r => r.id === ref.id), c = cls ? boardRows(f, cls).findIndex(r => r.id === ref.id) : -1;
@@ -1032,8 +1042,8 @@ async function saveRun() {
     msg.textContent = `Saved${bits.length ? `. You're ${bits.join(' · ')}` : ''} on the ${DIFF_TITLE[lastRun.diff]} · ${CLEF_SHORT[lastRun.clef]} · ${ANSWER_TITLE[lastRun.answer]} board.`;
     msg.className = 'msg ok';
   } catch (e) {
-    $('save-btn').disabled = false;
-    msg.textContent = "Couldn't save. Check your internet connection and try again."; msg.className = 'msg err';
+    $('save-btn').disabled = false; $('save-btn').hidden = false;
+    msg.textContent = "Couldn't post your score. Check your internet connection and press Try again."; msg.className = 'msg err';
   }
   saving = false;
 }
