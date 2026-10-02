@@ -249,7 +249,8 @@ canvas { display: block; width: 100%; }
 
 .pad { display: flex; flex-direction: column; gap: 8px; }
 .keys { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-.keys button { height: 64px; font: 700 26px var(--f-ui); color: var(--moon); background: var(--tide); border: 1px solid var(--rope); border-radius: 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; line-height: 1; padding-top: 4px; touch-action: manipulation; user-select: none; -webkit-user-select: none; transition: background .15s; }
+.keys button .num { position: absolute; top: 5px; left: 8px; font-size: 11px; font-weight: 700; color: var(--mist); letter-spacing: 0; }
+.keys button { position: relative; height: 64px; font: 700 26px var(--f-ui); color: var(--moon); background: var(--tide); border: 1px solid var(--rope); border-radius: 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; line-height: 1; padding-top: 4px; touch-action: manipulation; user-select: none; -webkit-user-select: none; transition: background .15s; }
 .keys .col { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .keys .col .gap { height: 28px; }
 .keys.ivl .col .gap { height: 38px; }
@@ -1746,6 +1747,7 @@ function keyButton(li, acc) {
   } else {
     b.textContent = settings.names === 'solfege' ? SOLF[li] : LETTERS[li];
     if (settings.names === 'solfege') b.appendChild(Object.assign(document.createElement('small'), { textContent: LETTERS[li] }));
+    b.appendChild(Object.assign(document.createElement('span'), { className: 'num', textContent: NOTE_NUM[li], ariaHidden: 'true' }));
   }
   b.addEventListener('pointerdown', e => { e.preventDefault(); ensureAudio(); answer(li, acc); });
   b.addEventListener('click', e => { if (e.detail === 0) answer(li, acc); });
@@ -1861,7 +1863,7 @@ function syncPad() {
     ? (settings.ivl === 'easy' ? 'Keyboard: <kbd>2</kbd>–<kbd>8</kbd> to answer' : 'Keyboard: <kbd>2</kbd>–<kbd>8</kbd> for major or perfect · <kbd>Shift</kbd> for minor or diminished' + (settings.ivl === 'hard' ? ' · <kbd>Alt</kbd>/<kbd>Option</kbd> for augmented · <kbd>Shift</kbd>+<kbd>Alt</kbd> for diminished 2, 3, 6, 7' : '')) + ' · <kbd>Esc</kbd> to pause or quit'
     : settings.answer === 'exact'
     ? 'Click or tap the exact key · the dot marks middle C · <kbd>Esc</kbd> to pause or quit'
-    : 'Keyboard: <kbd>A</kbd>–<kbd>G</kbd> or <kbd>1</kbd>–<kbd>7</kbd> (1 = C … 7 = B) to answer' + (acc ? ' · hold <kbd>Shift</kbd> for ♯, <kbd>Alt</kbd>/<kbd>Option</kbd> for ♭' : '') + ' · <kbd>Esc</kbd> to pause or quit';
+    : 'Keyboard: <kbd>A</kbd>–<kbd>G</kbd>, or <kbd>1</kbd>–<kbd>4</kbd> for C–F and <kbd>7</kbd>–<kbd>9</kbd> for G–B' + (acc ? ' · hold <kbd>B</kbd> or <kbd>Shift</kbd> for ♯, <kbd>V</kbd> or <kbd>Option</kbd> for ♭' : '') + ' · <kbd>Esc</kbd> to pause or quit';
   if (midiState === 'ready' && !isIvl()) $('hint').innerHTML = '<b style="color:var(--safe)">MIDI keyboard on</b> · ' + $('hint').innerHTML;
 }
 
@@ -2442,6 +2444,21 @@ function showOverlayWho(p) {
     ['Switch student', () => { $('overlay').hidden = true; showWelcome(false); }], ['Change class', () => { $('overlay').hidden = true; showWelcome(true); }], '');
 }
 
+// number keys fit both hands: 1 2 3 4 = C D E F, 7 8 9 = G A B; hold B for sharp or V for flat
+const NUM_NOTE = { 1: 'C', 2: 'D', 3: 'E', 4: 'F', 7: 'G', 8: 'A', 9: 'B' };
+const NOTE_NUM = ['1', '2', '3', '4', '7', '8', '9'];
+let heldV = false, heldB = false, bUsed = false;
+const noteKeysOn = () => !isIvl() && view() === 'game' && game.running && !game.paused && settings.answer !== 'exact';
+addEventListener('keyup', e => {
+  if (e.code === 'KeyV') heldV = false;
+  if (e.code === 'KeyB') {
+    // B on its own still answers the note B, when the key is let go (so it can also be held for sharps)
+    const answerB = heldB && !bUsed && noteKeysOn();
+    heldB = false; bUsed = false;
+    if (answerB) answer(6, e.shiftKey ? 1 : e.altKey ? -1 : 0);
+  }
+});
+addEventListener('blur', () => { heldV = heldB = bUsed = false; });
 addEventListener('keydown', e => {
   const inForm = e.target.closest && e.target.closest('#settings');
   if (e.target.matches && e.target.matches('input[type="text"]')) return;
@@ -2463,11 +2480,17 @@ addEventListener('keydown', e => {
     answerIvl(id, $('keys').querySelector(`[data-ivl="${id}"]`));
     return;
   }
-  const num = isIvl() ? null : e.code.match(/^(?:Digit|Numpad)([1-7])$/);
-  const m = isIvl() ? null : (e.code.match(/^Key([A-G])$/) || (num ? [e.code, LETTERS[+num[1] - 1]] : null));
+  if ((e.code === 'KeyV' || e.code === 'KeyB') && noteKeysOn() && !e.metaKey && !e.ctrlKey) {
+    e.preventDefault();
+    if (!e.repeat) { if (e.code === 'KeyV') heldV = true; else { heldB = true; bUsed = false; } }
+    return;
+  }
+  const num = isIvl() ? null : e.code.match(/^(?:Digit|Numpad)([1-4]|[7-9])$/);
+  const m = isIvl() ? null : (e.code.match(/^Key([A-G])$/) || (num ? [e.code, NUM_NOTE[num[1]]] : null));
   if (m && game.running && !game.paused && !e.metaKey && !e.ctrlKey && settings.answer !== 'exact') {
     e.preventDefault();
-    answer(LETTERS.indexOf(m[1]), e.shiftKey ? 1 : e.altKey ? -1 : 0);
+    if (heldB || heldV) bUsed = true;
+    answer(LETTERS.indexOf(m[1]), e.shiftKey || heldB ? 1 : e.altKey || heldV ? -1 : 0);
     return;
   }
   if (e.code === 'Escape' || e.code === 'KeyP') {
