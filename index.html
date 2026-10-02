@@ -249,6 +249,7 @@ canvas { display: block; width: 100%; }
 
 .pad { display: flex; flex-direction: column; gap: 8px; }
 .keys { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.keys button.acc .num { top: 3px; left: 6px; font-size: 9px; }
 .keys button .num { position: absolute; top: 5px; left: 8px; font-size: 11px; font-weight: 700; color: var(--mist); letter-spacing: 0; }
 .keys button { position: relative; height: 64px; font: 700 26px var(--f-ui); color: var(--moon); background: var(--tide); border: 1px solid var(--rope); border-radius: 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; line-height: 1; padding-top: 4px; touch-action: manipulation; user-select: none; -webkit-user-select: none; transition: background .15s; }
 .keys .col { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
@@ -499,6 +500,14 @@ legend { font-size: 12px; font-weight: 700; letter-spacing: .18em; text-transfor
           <input type="radio" name="acc" id="acc-on" value="on"><label for="acc-on">Add ♯ and ♭</label>
         </div>
       </fieldset>
+      <fieldset class="notes-only">
+        <legend>Typing keys</legend>
+        <div class="seg">
+          <input type="radio" name="keymap" id="keymap-rows" value="rows" checked><label for="keymap-rows">Keyboard rows</label>
+          <input type="radio" name="keymap" id="keymap-letters" value="letters"><label for="keymap-letters">Note letters</label>
+        </div>
+        <p class="muted small" style="margin-top:8px">Keyboard rows: A S D F G H J play C to B, the row above (Q to U) plays sharps, the row below (Z to M) plays flats. Note letters: type the note's name, with Shift for ♯ and Option for ♭.</p>
+      </fieldset>
       <fieldset>
         <legend>Note names</legend>
         <div class="seg">
@@ -691,7 +700,7 @@ const C = { moon: css('--moon'), lamp: css('--lamp'), flare: css('--flare'), saf
 const F = { music: css('--f-music'), ui: css('--f-ui'), display: css('--f-display') };
 
 const DEFAULT_RANGE = () => ({ treble: [0, 8], bass: [0, 8], alto: [0, 8] });
-const settings = { clef: 'treble', range: DEFAULT_RANGE(), answer: 'names', labels: 'c', game: 'notes', ivl: 'easy', keys: ['C', 'G', 'F'], expert: false, filter: 'all', acc: 'off', mode: 'arcade', names: 'letters', sound: true };
+const settings = { keymap: 'rows', clef: 'treble', range: DEFAULT_RANGE(), answer: 'names', labels: 'c', game: 'notes', ivl: 'easy', keys: ['C', 'G', 'F'], expert: false, filter: 'all', acc: 'off', mode: 'arcade', names: 'letters', sound: true };
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
@@ -1747,8 +1756,8 @@ function keyButton(li, acc) {
   } else {
     b.textContent = settings.names === 'solfege' ? SOLF[li] : LETTERS[li];
     if (settings.names === 'solfege') b.appendChild(Object.assign(document.createElement('small'), { textContent: LETTERS[li] }));
-    b.appendChild(Object.assign(document.createElement('span'), { className: 'num', textContent: NOTE_NUM[li], ariaHidden: 'true' }));
   }
+  if (settings.keymap !== 'letters') b.appendChild(Object.assign(document.createElement('span'), { className: 'num', textContent: (acc > 0 ? ROW_SHARP : acc < 0 ? ROW_FLAT : ROW_NAT)[li], ariaHidden: 'true' }));
   b.addEventListener('pointerdown', e => { e.preventDefault(); ensureAudio(); answer(li, acc); });
   b.addEventListener('click', e => { if (e.detail === 0) answer(li, acc); });
   return b;
@@ -1863,7 +1872,9 @@ function syncPad() {
     ? (settings.ivl === 'easy' ? 'Keyboard: <kbd>2</kbd>–<kbd>8</kbd> to answer' : 'Keyboard: <kbd>2</kbd>–<kbd>8</kbd> for major or perfect · <kbd>Shift</kbd> for minor or diminished' + (settings.ivl === 'hard' ? ' · <kbd>Alt</kbd>/<kbd>Option</kbd> for augmented · <kbd>Shift</kbd>+<kbd>Alt</kbd> for diminished 2, 3, 6, 7' : '')) + ' · <kbd>Esc</kbd> to pause or quit'
     : settings.answer === 'exact'
     ? 'Click or tap the exact key · the dot marks middle C · <kbd>Esc</kbd> to pause or quit'
-    : 'Keyboard: <kbd>A</kbd>–<kbd>G</kbd>, or <kbd>1</kbd>–<kbd>4</kbd> for C–F and <kbd>7</kbd>–<kbd>9</kbd> for G–B' + (acc ? ' · hold <kbd>B</kbd> or <kbd>Shift</kbd> for ♯, <kbd>V</kbd> or <kbd>Option</kbd> for ♭' : '') + ' · <kbd>Esc</kbd> to pause or quit';
+    : (settings.keymap === 'letters'
+      ? 'Keyboard: <kbd>A</kbd>–<kbd>G</kbd> to answer' + (acc ? ' · hold <kbd>Shift</kbd> for ♯, <kbd>Option</kbd> for ♭' : '')
+      : 'Keyboard: <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd> = C D E F G A B' + (acc ? ' · row above (<kbd>Q</kbd>…) for ♯ · row below (<kbd>Z</kbd>…) for ♭' : '')) + ' · <kbd>Esc</kbd> to pause or quit';
   if (midiState === 'ready' && !isIvl()) $('hint').innerHTML = '<b style="color:var(--safe)">MIDI keyboard on</b> · ' + $('hint').innerHTML;
 }
 
@@ -2043,7 +2054,7 @@ $('adv-btn').addEventListener('click', () => {
 });
 
 /* ---------- settings ---------- */
-const KEYS = ['clef', 'answer', 'labels', 'filter', 'acc', 'mode', 'names', 'ivl'];
+const KEYS = ['clef', 'answer', 'labels', 'filter', 'acc', 'mode', 'names', 'ivl', 'keymap'];
 function applySettings() {
   const f = $('settings');
   for (const k of KEYS) { const el = f.querySelector(`input[name="${k}"]:checked`); if (el) settings[k] = el.value; }
@@ -2444,21 +2455,13 @@ function showOverlayWho(p) {
     ['Switch student', () => { $('overlay').hidden = true; showWelcome(false); }], ['Change class', () => { $('overlay').hidden = true; showWelcome(true); }], '');
 }
 
-// number keys fit both hands: 1 2 3 4 = C D E F, 7 8 9 = G A B; hold B for sharp or V for flat
-const NUM_NOTE = { 1: 'C', 2: 'D', 3: 'E', 4: 'F', 7: 'G', 8: 'A', 9: 'B' };
-const NOTE_NUM = ['1', '2', '3', '4', '7', '8', '9'];
-let heldV = false, heldB = false, bUsed = false;
-const noteKeysOn = () => !isIvl() && view() === 'game' && game.running && !game.paused && settings.answer !== 'exact';
-addEventListener('keyup', e => {
-  if (e.code === 'KeyV') heldV = false;
-  if (e.code === 'KeyB') {
-    // B on its own still answers the note B, when the key is let go (so it can also be held for sharps)
-    const answerB = heldB && !bUsed && noteKeysOn();
-    heldB = false; bUsed = false;
-    if (answerB) answer(6, e.shiftKey ? 1 : e.altKey ? -1 : 0);
-  }
-});
-addEventListener('blur', () => { heldV = heldB = bUsed = false; });
+// keyboard rows: the home row A S D F G H J is C D E F G A B, the row above is sharps, the row below is flats
+const ROW_NAT = 'ASDFGHJ', ROW_SHARP = 'QWERTYU', ROW_FLAT = 'ZXCVBNM';
+function rowKey(code) {
+  const k = (code.match(/^Key([A-Z])$/) || [])[1]; if (!k) return null;
+  for (const [row, acc] of [[ROW_NAT, 0], [ROW_SHARP, 1], [ROW_FLAT, -1]]) { const i = row.indexOf(k); if (i >= 0) return [i, acc]; }
+  return null;
+}
 addEventListener('keydown', e => {
   const inForm = e.target.closest && e.target.closest('#settings');
   if (e.target.matches && e.target.matches('input[type="text"]')) return;
@@ -2480,17 +2483,15 @@ addEventListener('keydown', e => {
     answerIvl(id, $('keys').querySelector(`[data-ivl="${id}"]`));
     return;
   }
-  if ((e.code === 'KeyV' || e.code === 'KeyB') && noteKeysOn() && !e.metaKey && !e.ctrlKey) {
-    e.preventDefault();
-    if (!e.repeat) { if (e.code === 'KeyV') heldV = true; else { heldB = true; bUsed = false; } }
-    return;
+  const canType = !isIvl() && game.running && !game.paused && !e.metaKey && !e.ctrlKey && settings.answer !== 'exact';
+  if (canType && settings.keymap !== 'letters') {
+    const rk = rowKey(e.code);
+    if (rk) { e.preventDefault(); if (!e.repeat) answer(rk[0], rk[1]); return; }
   }
-  const num = isIvl() ? null : e.code.match(/^(?:Digit|Numpad)([1-4]|[7-9])$/);
-  const m = isIvl() ? null : (e.code.match(/^Key([A-G])$/) || (num ? [e.code, NUM_NOTE[num[1]]] : null));
-  if (m && game.running && !game.paused && !e.metaKey && !e.ctrlKey && settings.answer !== 'exact') {
+  const m = isIvl() || settings.keymap !== 'letters' ? null : e.code.match(/^Key([A-G])$/);
+  if (m && canType) {
     e.preventDefault();
-    if (heldB || heldV) bUsed = true;
-    answer(LETTERS.indexOf(m[1]), e.shiftKey || heldB ? 1 : e.altKey || heldV ? -1 : 0);
+    answer(LETTERS.indexOf(m[1]), e.shiftKey ? 1 : e.altKey ? -1 : 0);
     return;
   }
   if (e.code === 'Escape' || e.code === 'KeyP') {
