@@ -102,7 +102,7 @@ body[data-game="intervals"] .diff { grid-template-columns: repeat(3, minmax(0, 1
 .stage { view-transition-name: hl-stage; }
 #sound-btn { view-transition-name: hl-sound; }
 .row.center { justify-content: center; }
-.top-actions { display: flex; gap: 8px; align-items: center; }
+.top-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
 #midi-btn { display: inline-flex; align-items: center; gap: 7px; }
 #midi-btn i { width: 8px; height: 8px; border-radius: 50%; background: var(--rope); margin-top: -2px; }
 #midi-btn[data-state="ready"] { color: var(--moon); border-color: var(--safe); }
@@ -356,8 +356,8 @@ legend { font-size: 12px; font-weight: 700; letter-spacing: .18em; text-transfor
       <button class="iconbtn who" id="who-btn" type="button" title="Switch student or class">👤 Sign in</button>
       <button class="iconbtn" id="midi-btn" type="button" data-state="off" aria-describedby="midi-note"><i></i><span id="midi-label">MIDI keyboard</span></button>
       <button class="iconbtn" id="board-btn" type="button">Leaderboard</button>
-      <button class="iconbtn" id="teacher-btn" type="button">Teacher</button>
       <button class="iconbtn" id="sound-btn" type="button" aria-pressed="true">Sound on</button>
+      <button class="iconbtn" id="teacher-btn" type="button">Teacher Dashboard</button>
     </div>
   </header>
 
