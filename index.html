@@ -60,7 +60,7 @@ body[data-game="intervals"] .notes-only, body:not([data-game="intervals"]) .ivl-
 .gamepick input:checked + label { border-color: var(--lamp); color: var(--lamp); background: color-mix(in srgb, var(--lamp) 12%, var(--deep)); box-shadow: inset 0 0 0 1px var(--lamp); }
 .gamepick input:focus-visible + label { outline: 2px solid var(--lamp); outline-offset: 2px; }
 .simple.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.diff { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.diff { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 body[data-game="intervals"] .diff { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 640px) { .diff, body[data-game="intervals"] .diff { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .diff input { position: absolute; opacity: 0; pointer-events: none; }
@@ -285,6 +285,8 @@ canvas { display: block; width: 100%; }
 .piano .miss { background: var(--flare) !important; }
 .piano .show { background: var(--safe) !important; }
 @media (max-width: 520px) { .piano { height: 130px; } }
+.newbie-tip { color: var(--moon); font-size: 14px; }
+.newbie-tip b { color: var(--lamp); }
 .hint { text-align: center; font-size: 13px; color: var(--mist); margin: 0; }
 kbd { font: 700 11px var(--f-ui); border: 1px solid var(--rope); border-bottom-width: 2px; border-radius: 4px; padding: 2px 5px 0; color: var(--moon); }
 
@@ -406,6 +408,7 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
     <div class="simple" id="simple">
       <fieldset class="diff" id="diff">
         <legend class="sr-only">Difficulty</legend>
+        <input type="radio" name="level" id="level-newbie" value="newbie" class="notes-only"><label for="level-newbie" class="notes-only"><b>Newbie</b><span id="desc-newbie"></span></label>
         <input type="radio" name="level" id="level-easy" value="easy"><label for="level-easy"><b>Easy</b><span id="desc-easy"></span></label>
         <input type="radio" name="level" id="level-medium" value="medium"><label for="level-medium"><b>Medium</b><span id="desc-medium"></span></label>
         <input type="radio" name="level" id="level-hard" value="hard"><label for="level-hard"><b>Hard</b><span id="desc-hard"></span></label>
@@ -527,6 +530,7 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
   <div class="pad game-only">
     <div class="keys" id="keys"></div>
     <div class="piano-wrap" id="piano-wrap" hidden><div class="piano" id="piano"></div></div>
+    <p class="hint newbie-tip" id="newbie-tip" hidden></p>
     <p class="hint" id="hint"></p>
   </div>
 
@@ -699,7 +703,7 @@ const C = { moon: css('--moon'), lamp: css('--lamp'), flare: css('--flare'), saf
 const F = { music: css('--f-music'), ui: css('--f-ui'), display: css('--f-display') };
 
 const DEFAULT_RANGE = () => ({ treble: [0, 8], bass: [0, 8], alto: [0, 8] });
-const settings = { clef: 'treble', range: DEFAULT_RANGE(), answer: 'names', labels: 'c', game: 'notes', ivl: 'easy', keys: ['C', 'G', 'F'], expert: false, filter: 'all', acc: 'off', mode: 'arcade', names: 'letters', sound: true };
+const settings = { newbie: false, clef: 'treble', range: DEFAULT_RANGE(), answer: 'names', labels: 'c', game: 'notes', ivl: 'easy', keys: ['C', 'G', 'F'], expert: false, filter: 'all', acc: 'off', mode: 'arcade', names: 'letters', sound: true };
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
@@ -720,7 +724,7 @@ const yOf = (staff, p) => bottomY(staff) - p * g / 2;
 const staffLeft = () => 3.1 * g;
 const isIvl = () => settings.game === 'intervals';
 const maxSig = () => isIvl() ? Math.max(0, ...settings.keys.map(id => Math.abs(KEY_BY_ID[id].sig))) : expertOn() ? Math.max(0, ...expertKeys().map(id => Math.abs(KEY_BY_ID[id].sig))) : 0;
-const reefX = () => (7.8 + (maxSig() ? maxSig() * .95 + .4 : 0)) * g;                                  // the rocks: a boat that reaches here is lost
+const reefX = () => (7.8 + (maxSig() ? maxSig() * .95 + .4 : 0) + (newbieOn() ? 2.4 : 0)) * g;                                  // the rocks: a boat that reaches here is lost
 const seaY = () => H - 2 * g;                                 // waterline of the band below the staff
 const lampPos = () => ({ x: 1.55 * g, y: sky + 1.6 * g });
 const spawnX = () => W + 2.5 * g;
@@ -900,14 +904,15 @@ const needsAcc = () => settings.acc === 'on' || (drill && drill.some(d => d.acc 
 // chromatic solfège with accidentals is the hardest reading, so it starts 35% slower (the level curve still speeds it up)
 // intervals take much longer to read, and Hard's full pad longer still
 const IVL_EASE = { easy: 1.8, medium: 2.1, hard: 2.4 };
-const easeFactor = () => isIvl() ? IVL_EASE[settings.ivl] : (settings.names === 'solfege' && needsAcc()) ? 1.35 : 1;
+const newbieOn = () => !isIvl() && settings.newbie;
+const easeFactor = () => isIvl() ? IVL_EASE[settings.ivl] : newbieOn() ? 1.5 : (settings.names === 'solfege' && needsAcc()) ? 1.35 : 1;
 function tuning() {
   if (!game.running) return { T: 8.5, I: 2.4 };
   const k = easeFactor();
   if (settings.mode === 'practice') return { T: 9 * k, I: 3 * k };
   if (settings.mode === 'sprint') return { T: 6 * k, I: 0 };
   const L = game.level - 1;
-  const decay = isIvl() ? .92 : .88;                              // intervals also speed up more gently per level
+  const decay = isIvl() || newbieOn() ? .92 : .88;                              // intervals also speed up more gently per level
   return { T: Math.max(1.3 * k, 8 * k * Math.pow(decay, L)), I: Math.max(.5 * k, 2.8 * k * Math.pow(decay + .01, L)) };
 }
 function roomToSpawn() {
@@ -915,9 +920,10 @@ function roomToSpawn() {
   return !last || spawnX() - noteX(last) > 4.4 * g;
 }
 
-const bestKey = () => ['harborlights', settings.mode, settings.clef, staves().map(s => settings.range[s].join('_')).join('~'), settings.filter, settings.acc, settings.answer].join(':') + (expertOn() ? ':expert:' + expertKeys().slice().sort().join('.') : '') + (isIvl() ? ':ivl:' + settings.ivl + ':' + settings.keys.slice().sort().join('.') : '');
+const bestKey = () => ['harborlights', newbieOn() ? 'newbie' : '', settings.mode, settings.clef, staves().map(s => settings.range[s].join('_')).join('~'), settings.filter, settings.acc, settings.answer].join(':') + (expertOn() ? ':expert:' + expertKeys().slice().sort().join('.') : '') + (isIvl() ? ':ivl:' + settings.ivl + ':' + settings.keys.slice().sort().join('.') : '');
 
 function startGame() {
+  nbStreak = {}; nbFlash = {};
   ensureAudio();
   Object.assign(game, { running: true, paused: false, over: false, score: 0, level: 1, hits: 0, wrong: 0, lost: 0, streak: 0, bestStreak: 0, lamps: 6, time: 60, elapsed: 0, lock: 0, stats: {} });
   notes = []; homeward = []; floaters = []; particles = []; spawnT = .5; lastPick = null;
@@ -937,9 +943,13 @@ function endGame() {
   const mins = Math.max(game.elapsed, 1) / 60;
   let isBest = false;
   logRun();
-  lastRun = (!drill && !drillIvls && settings.mode !== 'practice') ? { score: game.score, hits: game.hits, acc, level: settings.mode === 'arcade' ? game.level : null, mode: settings.mode, diff: currentLevel(), clef: settings.clef, answer: isIvl() ? 'intervals' : settings.answer, names: settings.names } : null;
+  lastRun = (!drill && !drillIvls && settings.mode !== 'practice' && !newbieOn()) ? { score: game.score, hits: game.hits, acc, level: settings.mode === 'arcade' ? game.level : null, mode: settings.mode, diff: currentLevel(), clef: settings.clef, answer: isIvl() ? 'intervals' : settings.answer, names: settings.names } : null;
   if (lastRun) lastRun.wasGuest = isGuest();
   syncSaveBox(true);
+  if (newbieOn() && settings.mode !== 'practice' && !drill) {
+    $('save-box').hidden = false; $('save-btn').hidden = true; $('save-msg').textContent = '';
+    $('save-who').textContent = "Newbie games aren't on the leaderboard. Ready to compete? Try Easy.";
+  }
   if (!drill && !drillIvls && !isGuest()) { const best = store.get(bestKey(), 0); if (game.score > best) { store.set(bestKey(), game.score); isBest = game.score > 0; } }
   $('res-score').textContent = game.score.toLocaleString();
   $('res-hits').textContent = game.hits;
@@ -1130,7 +1140,7 @@ function renderAssignment() {
 function useAssignment() {
   const a = classAssign; if (!a) return;
   settings.game = a.game === 'intervals' ? 'intervals' : 'notes';
-  const lv = settings.game === 'intervals' && a.level === 'expert' ? 'hard' : (a.level || 'easy');
+  const lv = settings.game === 'intervals' && a.level === 'expert' ? 'hard' : settings.game === 'intervals' && a.level === 'newbie' ? 'easy' : (a.level || 'easy');
   applyLevel(lv);
   if (document.getElementById('clef-' + a.clef)) $('clef-' + a.clef).checked = true;
   if (document.getElementById('mode-' + a.mode)) $('mode-' + a.mode).checked = true;
@@ -1138,7 +1148,7 @@ function useAssignment() {
 }
 
 let boardAll = [], boardState = 'loading', boardScope = 'world', lastRun = null, savedRunId = null, saving = false;
-const DIFF_TITLE = { easy: 'Easy', medium: 'Medium', hard: 'Hard', expert: 'Expert', custom: 'Custom' };
+const DIFF_TITLE = { newbie: 'Newbie', easy: 'Easy', medium: 'Medium', hard: 'Hard', expert: 'Expert', custom: 'Custom' };
 const ANSWER_TITLE = { names: 'Note names', any: 'Piano', exact: 'Piano exact', intervals: 'Intervals' };
 const CLEF_SHORT = { treble: 'Treble', bass: 'Bass', alto: 'Alto', grand: 'Grand staff' };
 const toRow = d => { const r = d.data(); return { ...r, id: d.id, at: r.created_at && r.created_at.toDate ? r.created_at.toDate().toISOString() : new Date().toISOString() }; };
@@ -1166,7 +1176,7 @@ function boardFilter() {
 }
 function setBoardFilter(run) {
   $('bmode-' + (run.mode === 'sprint' ? 'sprint' : 'arcade')).checked = true;
-  $('bdiff-' + run.diff).checked = true; $('bclef-' + run.clef).checked = true; $('bgame-' + run.answer).checked = true;
+  for (const [k, v] of [['bdiff', run.diff], ['bclef', run.clef], ['bgame', run.answer]]) ($(k + '-' + v) || $(k + '-all')).checked = true;   // Newbie has no board, so it shows every difficulty
 }
 function boardRows(f, rows = boardAll) {
   return rows.filter(r => typeof r.score === 'number' && r.mode === f.mode && (f.diff === 'all' || r.diff === f.diff) && (f.clef === 'all' || r.clef === f.clef) && (f.answer === 'all' || r.answer === f.answer))
@@ -1269,6 +1279,7 @@ function toHarbor() {
 function quitToHarbor() { toHarbor(); }
 
 function record(n, ok) {
+  newbieRecord(n, ok);
   logAnswer(n, ok);
   if (n.kind === 'ivl') {
     const k = 'ivl:' + ivlKey(n.ivl);
@@ -1514,7 +1525,7 @@ function update(dt) {
   particles = particles.filter(p => p.life > 0);
   for (const f of floaters) { f.y -= g * 1.3 * dt; f.life -= dt; }
   floaters = floaters.filter(f => f.life > 0);
-  shake = Math.max(0, shake - dt); lampFlicker = Math.max(0, lampFlicker - dt);
+  shake = Math.max(0, shake - dt); for (const k in nbFlash) nbFlash[k] = Math.max(0, nbFlash[k] - dt); lampFlicker = Math.max(0, lampFlicker - dt);
   if (banner) { banner.life -= dt; if (banner.life <= 0) banner = null; }
 }
 
@@ -1644,6 +1655,35 @@ function drawKeySig(st, key) {
     ctx.fillText(kind === 'sharp' ? '\u266F' : '\u266D', x0 + i * .95 * g, yOf(st, p) + (kind === 'sharp' ? .52 : .4) * g);
   }
 }
+// Newbie: a label on every line and space; a label fades after 3 right in a row and comes back on a miss
+let nbStreak = {}, nbFlash = {};
+const nbLineX = () => 7.4 * g, nbSpaceX = () => 8.5 * g;
+function newbieRecord(n, ok) {
+  if (!newbieOn() || n.kind === 'ivl' || n.p < 0 || n.p > 8) return;
+  const k = n.staff + ':' + n.p;
+  if (ok) nbStreak[k] = (nbStreak[k] || 0) + 1; else { nbStreak[k] = 0; nbFlash[k] = 1.4; }
+}
+function drawNewbieLabels(st) {
+  for (let p = 0; p <= 8; p++) {
+    const k = st + ':' + p, line = p % 2 === 0, x = line ? nbLineX() : nbSpaceX(), y = yOf(st, p);
+    const flash = nbFlash[k] > 0, learned = (nbStreak[k] || 0) >= 3;
+    ctx.globalAlpha = flash ? 1 : learned ? .22 : .95;
+    ctx.fillStyle = flash ? C.flare : line ? '#2c4b5e' : '#183345';
+    ctx.beginPath(); ctx.roundRect(x - .58 * g, y - .48 * g, 1.16 * g, .96 * g, .22 * g); ctx.fill();
+    ctx.fillStyle = flash ? C.deep : line ? C.moon : C.lamp;
+    ctx.font = `700 ${.78 * g}px ${F.ui}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(LETTERS[letterIdx(BOTTOM[st] + p)], x, y + .06 * g);
+  }
+  ctx.globalAlpha = 1; ctx.textBaseline = 'alphabetic';
+}
+function drawNewbieGuide() {
+  const n = notes[0];
+  if (!newbieOn() || !game.running || !n || n.p < 0 || n.p > 8) return;
+  const y = yOf(n.staff, n.p), x0 = (n.p % 2 === 0 ? nbLineX() : nbSpaceX()) + .7 * g, x1 = noteX(n) - 1.1 * g;
+  if (x1 <= x0) return;
+  ctx.save(); ctx.setLineDash([g * .2, g * .35]); ctx.strokeStyle = C.lamp; ctx.globalAlpha = .45; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke(); ctx.restore();
+}
 function drawStaves() {
   ctx.strokeStyle = C.moon; ctx.lineWidth = Math.max(1, g * .07);
   for (const st of staves()) {
@@ -1653,7 +1693,9 @@ function drawStaves() {
     ctx.font = `${4 * g}px ${F.music}`; ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
     ctx.fillText(GLYPH[st], staffLeft() + .35 * g, yOf(st, 0) - CLEF_LIFT[st] * g);   // Noto Music: 1em = staff height, baseline on the bottom line
     if (isIvl() || keyedNow()) drawKeySig(st, activeKey());
+    if (newbieOn()) drawNewbieLabels(st);
   }
+  drawNewbieGuide();
   ctx.globalAlpha = .6;
   const s = staves();
   ctx.beginPath(); ctx.moveTo(staffLeft(), yOf(s[0], 8)); ctx.lineTo(staffLeft(), yOf(s[s.length - 1], 0)); ctx.stroke();
@@ -1861,7 +1903,20 @@ function followLead() {
   wrap.scrollTo({ left: x, behavior: reduceMotion ? 'auto' : 'smooth' });
 }
 
+const AIDS = {
+  treble: ['E G B D F', 'Every Good Boy Does Fine', 'F A C E', 'spells FACE'],
+  bass: ['G B D F A', 'Good Boys Do Fine Always', 'A C E G', 'All Cows Eat Grass'],
+  alto: ['F A C E G', 'Fat Alley Cats Eat Garbage', 'G B D F', "Grand Bears Don't Fight"]
+};
+function syncNewbieTip() {
+  const tip = $('newbie-tip');
+  if (!newbieOn()) { tip.hidden = true; return; }
+  const st = grand() ? ['treble', 'bass'] : [settings.clef];
+  tip.innerHTML = st.map(c => { const a = AIDS[c]; return `${st.length > 1 ? `<b>${c === 'treble' ? 'Treble' : 'Bass'}</b> · ` : ''}<b>Lines</b> ${a[0]}: ${a[1]} · <b>Spaces</b> ${a[2]}: ${a[3]}`; }).join('<br>');
+  tip.hidden = false;
+}
 function syncPad() {
+  syncNewbieTip();
   const acc = needsAcc(), piano = settings.answer !== 'names' && !isIvl();
   $('keys').hidden = piano; $('piano-wrap').hidden = !piano;
   if (piano) { buildPiano(); pianoFollow = null; }
@@ -1970,15 +2025,15 @@ function currentLevel() {
   if (isIvl()) { const a = settings.keys.slice().sort().join(), b = KEY_PRESET[settings.ivl].slice().sort().join(); return a === b ? settings.ivl : 'custom'; }
   if (settings.filter !== 'all') return 'custom';
   const all = s => ['treble', 'bass', 'alto'].every(st => same(settings.range[st], s(st)));
-  if (settings.acc === 'off' && all(() => [0, 8])) return 'easy';
+  if (settings.acc === 'off' && all(() => [0, 8])) return settings.newbie ? 'newbie' : 'easy';
   if (settings.acc === 'on' && all(() => [0, 8])) return 'medium';
   if (settings.acc === 'on' && all(st => LEDGER[st])) return settings.expert ? 'expert' : 'hard';
   return 'custom';
 }
 function applyLevel(lv) {
   if (isIvl()) { settings.ivl = lv; settings.keys = KEY_PRESET[lv].slice(); $('ivl-' + lv).checked = true; return; }
-  settings.expert = lv === 'expert';
-  settings.acc = lv === 'easy' ? 'off' : 'on';
+  settings.expert = lv === 'expert'; settings.newbie = lv === 'newbie';
+  settings.acc = lv === 'easy' || lv === 'newbie' ? 'off' : 'on';
   settings.filter = 'all';
   for (const st of ['treble', 'bass', 'alto']) settings.range[st] = lv === 'hard' || lv === 'expert' ? LEDGER[st].slice() : [0, 8];
   if (lv === 'expert' && !settings.keys.some(id => KEY_BY_ID[id] && Math.abs(KEY_BY_ID[id].sig) <= 5 && KEY_BY_ID[id].sig !== 0)) settings.keys = MAJOR.filter(k => Math.abs(k.sig) <= 5).map(k => k.id);
@@ -2001,7 +2056,8 @@ function clefSVG(list) {
 const CLEF_SIZE = { treble: 40, bass: 56, alto: 52 };
 function syncSimple() {
   const lv = currentLevel();
-  for (const k of ['easy', 'medium', 'hard', 'expert']) $('level-' + k).checked = lv === k;
+  for (const k of ['newbie', 'easy', 'medium', 'hard', 'expert']) $('level-' + k).checked = lv === k;
+  $('desc-newbie').textContent = 'Every line and space is labeled, and the boats sail slowly. Practice only';
   $('keysig-field').hidden = !(isIvl() || settings.expert);
   $('desc-expert').textContent = 'Like Hard, then a new key signature every level from level ' + EXPERT_FROM;
   $('custom-note').hidden = lv !== 'custom';
@@ -2308,7 +2364,7 @@ function tdAssign() {
     <p class="dim" style="margin:0">Choose what <b>${esc(cls.name)}</b> should practice. Students in this class see a banner on the start page with a <b>Use these settings</b> button and their progress toward today's goal. It stays until you change or clear it.</p>
     <div class="td-form" id="as-form">
       <label class="wide">Game${seg('as-game', [['notes', 'Note reading'], ['intervals', 'Intervals']], a.game)}</label>
-      <label class="wide">Difficulty${seg('as-level', [['easy', 'Easy'], ['medium', 'Medium'], ['hard', 'Hard'], ['expert', 'Expert (Note reading only)']], a.level)}</label>
+      <label class="wide">Difficulty${seg('as-level', [['newbie', 'Newbie (Note reading only)'], ['easy', 'Easy'], ['medium', 'Medium'], ['hard', 'Hard'], ['expert', 'Expert (Note reading only)']], a.level)}</label>
       <label class="wide">Clef${seg('as-clef', [['treble', 'Treble'], ['bass', 'Bass'], ['alto', 'Alto'], ['grand', 'Grand staff']], a.clef)}</label>
       <label class="wide">Game mode${seg('as-mode', [['arcade', 'Levels'], ['sprint', 'Speed round'], ['practice', 'Practice']], a.mode)}</label>
       <label>Goal: boats home per day<input id="as-goal" type="number" min="0" max="1000" value="${a.goal ?? 40}"></label>
@@ -2320,6 +2376,7 @@ function tdAssign() {
   $('as-save').onclick = async () => {
     const assignment = { game: val('as-game'), level: val('as-level'), clef: val('as-clef'), mode: val('as-mode'), goal: Math.max(0, Math.min(1000, +$('as-goal').value || 0)), minutes: Math.max(0, Math.min(240, +$('as-min').value || 0)), note: $('as-note').value.trim().slice(0, 140), set_at: Date.now() };
     if (assignment.game === 'intervals' && assignment.level === 'expert') assignment.level = 'hard';
+    if (assignment.game === 'intervals' && assignment.level === 'newbie') assignment.level = 'easy';
     try { await run(({ fs, db }) => fs.updateDoc(fs.doc(db, 'classes', TD.code), { tidal_assignment: assignment })); cls.tidal_assignment = assignment; tdAssign(); tdMsg(`Assignment saved for ${cls.name}.`, true); }
     catch (e) { tdMsg(tdErr(e)); }
   };
