@@ -1193,10 +1193,11 @@ function useAssignment() {
   drill = null; applySettings();
 }
 
-let boardAll = [], boardState = 'loading', boardScope = 'world', lastRun = null, savedRunId = null, saving = false;
+let boardAll = [], boardState = 'loading', boardScope = 'world', boardTok = 0, lastRun = null, savedRunId = null, saving = false;
 const DIFF_TITLE = { newbie: 'Newbie', easy: 'Easy', medium: 'Medium', hard: 'Hard', expert: 'Expert', custom: 'Custom' };
 const ANSWER_TITLE = { names: 'Note names', any: 'Piano', exact: 'Piano exact', intervals: 'Intervals' };
 const CLEF_SHORT = { treble: 'Treble', bass: 'Bass', alto: 'Alto', grand: 'Grand staff' };
+const toRow = d => { const r = d.data(); return { ...r, id: d.id, at: r.created_at && r.created_at.toDate ? r.created_at.toDate().toISOString() : new Date().toISOString() }; };
 // ---------- developer scores ----------
 // Mr. Milnes plays as "Milnes D.". When he posts while signed in with his Google account, the score is marked
 // dev: true and shows on every class's board with a DEV badge. The rules stop anyone else using that name.
@@ -1216,21 +1217,68 @@ async function devPost(name, getAuth, signIn) {
 async function devRows(fs, db, col, extra = []) {
   try { return (await fs.getDocs(fs.query(fs.collection(db, col), fs.where('dev', '==', true), ...extra))).docs; } catch (e) { return []; }
 }
-const toRow = d => { const r = d.data(); return { ...r, id: d.id, at: r.created_at && r.created_at.toDate ? r.created_at.toDate().toISOString() : new Date().toISOString() }; };
-// World: the 400 best runs overall (filtered here by mode, clef and so on). Class: every run with that class code.
-async function fetchRows(scope) {
-  const { fs, db } = await fb(), p = getProfile(), col = fs.collection(db, 'tidal_scores');
-  const q = scope === 'class' && p && p.classCode ? fs.query(col, fs.where('class_code', '==', p.classCode)) : fs.query(col, fs.orderBy('score', 'desc'), fs.limit(400));
-  const rows = (await wait(fs.getDocs(q))).docs.map(toRow);
-  if (scope !== 'class' || !(p && p.classCode)) return rows;
-  const seen = new Set(rows.map(r => r.id));   // the developer's runs show on every class board
-  return rows.concat((await devRows(fs, db, 'tidal_scores')).map(toRow).filter(r => !seen.has(r.id)));
+// Boards read only the 60 best runs for the chosen mode (and difficulty), class or world; clef and answer style are filtered here.
+// Every run is still saved forever. Each result is kept a minute in memory so reopening or switching back costs no reads.
+const BOARD_N = 60, BOARD_TTL = 60000, boardCache = new Map(), noIndex = new Set();
+function boardKey(scope, f) {
+  const p = getProfile(), code = scope === 'class' && p && p.classCode ? p.classCode : '';
+  return { code, diff: f.diff === 'all' ? '' : f.diff, key: ['tidal_scores', code ? 'class' : 'world', code, f.mode, f.diff === 'all' ? '' : f.diff].join('|') };
+}
+function boardHit(scope, f) { const c = boardCache.get(boardKey(scope, f).key); return c && Date.now() - c.t < BOARD_TTL ? c : null; }
+// missing composite index: warn once (Firestore's message has the create-index link), then use the old query for the rest of this page session
+function idxMiss(shape, e) {
+  if (!e || e.code !== 'failed-precondition') return false;
+  if (!noIndex.has(shape)) console.warn('[index needed]', e.message);
+  noIndex.add(shape); return true;
+}
+async function fetchRows(scope, f) {
+  const hit = boardHit(scope, f); if (hit) return hit;
+  const { code, diff, key } = boardKey(scope, f), shape = (code ? 'class' : 'world') + (diff ? '+diff' : '');
+  const { fs, db } = await fb(), col = fs.collection(db, 'tidal_scores');
+  let res = null;
+  if (!noIndex.has(shape)) try {
+    const eq = [...(code ? [fs.where('class_code', '==', code)] : []), fs.where('mode', '==', f.mode), ...(diff ? [fs.where('diff', '==', diff)] : [])];
+    const s = await wait(fs.getDocs(fs.query(col, ...eq, fs.orderBy('score', 'desc'), fs.limit(BOARD_N))));
+    res = { rows: s.docs.map(toRow), full: s.size >= BOARD_N };
+  } catch (e) { if (!idxMiss(shape, e)) throw e; }
+  if (!res) {   // old query: every run with that class code, or the 400 best runs overall
+    const s = await wait(fs.getDocs(code ? fs.query(col, fs.where('class_code', '==', code)) : fs.query(col, fs.orderBy('score', 'desc'), fs.limit(400))));
+    res = { rows: s.docs.map(toRow), full: !code && s.size >= 400 };
+  }
+  if (code) {   // the developer's runs show on every class board
+    const seen = new Set(res.rows.map(r => r.id));
+    res.rows = res.rows.concat((await devRows(fs, db, 'tidal_scores', [fs.where('mode', '==', f.mode), ...(diff ? [fs.where('diff', '==', diff)] : [])])).map(toRow).filter(r => !seen.has(r.id)));
+  }
+  res.min = res.rows.reduce((m, r) => typeof r.score === 'number' && r.score < m ? r.score : m, Infinity); res.t = Date.now();
+  boardCache.set(key, res); return res;
+}
+// a just-posted run goes straight into every cached board it belongs on
+function boardAdd(row) {
+  for (const [k, c] of boardCache) {
+    const [, sc, code, mode, diff] = k.split('|');
+    if (mode === row.mode && (!diff || diff === row.diff) && (sc === 'world' || code === row.class_code) && !c.rows.some(r => r.id === row.id)) c.rows.push(row);
+  }
+}
+// 0-based place of a just-posted run on its own board; below the fetched top it counts the better runs on the server (1 read per 1000)
+async function runRank(scope, f, row) {
+  const res = await fetchRows(scope, f), i = boardRows(f, res.rows).findIndex(r => r.id === row.id);
+  if (!res.full || (i >= 0 && row.score > res.min)) return i;
+  const code = scope === 'class' ? row.class_code : '', shape = 'count-' + scope, { fs, db } = await fb(), col = fs.collection(db, 'tidal_scores');
+  if (!noIndex.has(shape)) try {
+    const q = fs.query(col, ...(code ? [fs.where('class_code', '==', code)] : []), fs.where('mode', '==', f.mode), fs.where('diff', '==', f.diff), fs.where('clef', '==', f.clef), fs.where('answer', '==', f.answer), fs.where('score', '>', row.score), fs.orderBy('score', 'desc'));
+    return (await wait(fs.getCountFromServer(q))).data().count;
+  } catch (e) { if (!idxMiss(shape, e)) throw e; }
+  if (!code) return -1;   // the old world rank only looked at the 400 best runs
+  return boardRows(f, (await wait(fs.getDocs(fs.query(col, fs.where('class_code', '==', code))))).docs.map(toRow)).findIndex(r => r.id === row.id);
 }
 async function loadBoard() {
-  const p = getProfile();
+  const p = getProfile(), tok = ++boardTok;
   if (boardScope === 'class' && !(p && p.classCode)) boardScope = 'world';
-  renderScope(); boardState = 'loading'; renderBoard();
-  try { boardAll = await fetchRows(boardScope); boardState = 'ready'; } catch { boardState = 'off'; }
+  renderScope();
+  const f = boardFilter(), hit = boardHit(boardScope, f);
+  if (hit) { boardAll = hit.rows; boardState = 'ready'; renderBoard(); return; }
+  boardState = 'loading'; renderBoard();
+  try { const res = await fetchRows(boardScope, f); if (tok !== boardTok) return; boardAll = res.rows; boardState = 'ready'; } catch { if (tok !== boardTok) return; boardState = 'off'; }
   renderBoard();
 }
 function renderScope() {
@@ -1313,9 +1361,9 @@ async function saveRun() {
     const ref = await wait(fs.addDoc(fs.collection(db, 'tidal_scores'), data));
     savedRunId = ref.id;
     $('save-who').textContent = `Posted as ${displayName(p)}${p.classCode ? ' to ' + p.className + ' and the World board' : ' to the World board'}.`;
-    const f = { mode: lastRun.mode, diff: lastRun.diff, clef: lastRun.clef, answer: lastRun.answer };
-    const [world, cls] = await Promise.all([fetchRows('world'), p.classCode ? fetchRows('class') : null]);
-    const w = boardRows(f, world).findIndex(r => r.id === ref.id), c = cls ? boardRows(f, cls).findIndex(r => r.id === ref.id) : -1;
+    const f = { mode: lastRun.mode, diff: lastRun.diff, clef: lastRun.clef, answer: lastRun.answer }, row = { ...data, created_at: null, id: ref.id, at: new Date().toISOString() };
+    boardAdd(row);
+    const [w, c] = await Promise.all([runRank('world', f, row), p.classCode ? runRank('class', f, row) : -1]);
     const bits = [c >= 0 ? `#${c + 1} in ${p.className}` : '', w >= 0 ? `#${w + 1} in the world` : ''].filter(Boolean);
     msg.textContent = `Saved${bits.length ? `. You're ${bits.join(' · ')}` : ''} on the ${DIFF_TITLE[lastRun.diff]} · ${CLEF_SHORT[lastRun.clef]} · ${ANSWER_TITLE[lastRun.answer]} board.`;
     msg.className = 'msg ok';
@@ -2562,7 +2610,7 @@ $('td-signout').onclick = async () => { try { const { auth, authMod } = await fb
 $('teacher-btn').addEventListener('click', openTeacher);
 
 $('board-back').addEventListener('click', toHarbor);
-$('board-filters').addEventListener('change', renderBoard);
+$('board-filters').addEventListener('change', e => (e.target.name === 'bmode' || e.target.name === 'bdiff' ? loadBoard : renderBoard)());   // mode and difficulty are filtered on the server
 $('board-scope').addEventListener('change', e => { if (e.target.name === 'bscope') { boardScope = e.target.value; loadBoard(); } });
 $('w-form').addEventListener('submit', submitWelcome);
 $('w-solo').addEventListener('change', e => { $('w-code').disabled = e.target.checked; if (e.target.checked) $('w-code').value = ''; });
