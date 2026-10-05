@@ -1045,6 +1045,7 @@ async function submitWelcome(e) {
   const solo = $('w-solo').checked, code = cleanCode($('w-code').value), err = $('w-error');
   if (!/^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ' -]{0,14}$/.test(first)) { err.textContent = 'Enter your first name (letters only).'; $('w-first').focus(); return; }
   if (!/^[A-Z]$/.test(init)) { err.textContent = 'Enter the first letter of your last name.'; $('w-init').focus(); return; }
+  if (isDevName(first + ' ' + init)) { try { await devPost(first + ' ' + init, fbAuth, async () => { const { auth, authMod } = await fbAuth(); return (await authMod.signInWithPopup(auth, new authMod.GoogleAuthProvider())).user.email; }); } catch (ex) { err.textContent = 'That name is reserved. Use your own first name and last initial.'; return; } }
   let className = '', classOwner = '';
   if (!solo) {
     if (!code) { err.textContent = 'Enter the class code from your teacher, or check "I\'m not in a class."'; $('w-code').focus(); return; }
