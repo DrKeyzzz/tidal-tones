@@ -1150,7 +1150,9 @@ function logRun() {
   writeDay(d); syncProgress();
 }
 let syncTimer = 0;
-function scheduleSync() { clearTimeout(syncTimer); syncTimer = setTimeout(syncProgress, 2000); }
+// at most one progress save a minute per student (plus one when the page is hidden), so a busy class stays inside Firebase's free daily limit
+let lastSync = 0;
+function scheduleSync() { clearTimeout(syncTimer); syncTimer = setTimeout(() => { lastSync = Date.now(); syncProgress(); }, Math.max(2000, lastSync + 60000 - Date.now())); }
 async function syncProgress() {
   clearTimeout(syncTimer);
   const p = tracked(), d = readDay(); if (!p || !d || !d.answers) return;
@@ -2313,7 +2315,8 @@ const missRows = list => list.map(([lab, v]) => `<div class="miss-row"><span>${e
 async function tdProgress(keep) {
   const body = $('td-body');
   if (!keep) body.innerHTML = '<p class="dim">Loading progress…</p>';
-  try { TD.docs = await run(async ({ fs, db }) => (await fs.getDocs(fs.query(fs.collection(db, 'tidal_progress'), fs.where('owner', '==', TD.email), fs.where('class_code', '==', TD.code)))).docs.map(d => d.data())); tdMsg(''); }
+  const LOAD = (code, day) => run(async ({ fs, db }) => (await fs.getDocs(fs.query(fs.collection(db, 'tidal_progress'), fs.where('owner', '==', TD.email), fs.where('class_code', '==', code), ...(day ? [fs.where('date', '==', day)] : [])))).docs.map(d => d.data()));
+  try { TD.docs = keep && TD.range === 'today' && TD.docsCode === TD.code ? TD.docs.filter(d => d.date !== dayKey()).concat((await LOAD(TD.code, dayKey())).filter(d => d.date === dayKey())) : await LOAD(TD.code); TD.docsCode = TD.code; tdMsg(''); }
   catch (e) { tdMsg(tdErr(e)); TD.docs = []; }
   const studs = mergeDocs(rangeDocs()), k = TD.sort.key, dir = TD.sort.dir;
   studs.sort((a, b) => (k === 'student' ? String(a.student).localeCompare(String(b.student)) : (a[k] - b[k])) * dir);
