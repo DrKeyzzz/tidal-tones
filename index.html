@@ -1029,10 +1029,65 @@ const displayName = p => `${p.first.charAt(0).toUpperCase()}${p.first.slice(1)} 
 const cleanCode = v => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 function updateWho() {
   const p = getProfile();
-  $('who-btn').textContent = p ? `👤 ${displayName(p)}${p.classCode ? ' · ' + p.className : ''}` : isGuest() ? '👤 Guest (sign in)' : '👤 Sign in';
+  $('who-btn').textContent = p ? `${iconOf(p) || '👤'} ${displayName(p)}${p.classCode ? ' · ' + p.className : ''}` : isGuest() ? '👤 Guest (sign in)' : '👤 Sign in';
+}
+// ---------- player icons (shared by every game: saved with the sign-in, shown next to names on leaderboards) ----------
+const ICONS = ['🎹','🎸','🎺','🎷','🥁','🎻','🪕','🎤','🎧','🎼','🎵','🪘','🪗','⭐','🔥','🚀'];   // must match iconOk() in firestore.rules
+const iconOf = p => (p && ICONS.includes(p.icon) ? p.icon : '');
+let iconBox = null;
+function iconPicker() {
+  if (iconBox) return iconBox;
+  const before = document.querySelector('label[for="wCode"], label.w-code, label[for="w-code"]'); if (!before) return null;
+  const st = document.createElement('style');
+  st.textContent = '.icon-pick{display:flex;flex-direction:column;gap:6px;text-align:left}.icon-pick .ip-l{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;opacity:.8}.icon-pick .ip-g{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}.icon-pick button{font-size:22px;line-height:1;padding:7px 0;border-radius:10px;background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.18);cursor:pointer;font-family:inherit}.icon-pick button:hover{border-color:rgba(255,255,255,.5)}.icon-pick button[aria-pressed="true"]{border-color:#ffc85c;background:rgba(255,200,92,.22);box-shadow:0 0 12px -2px #ffc85c}.nm-ic{margin-right:6px}';
+  document.head.appendChild(st);
+  iconBox = document.createElement('div'); iconBox.className = 'icon-pick';
+  iconBox.innerHTML = '<span class="ip-l">Pick your icon</span><div class="ip-g" role="group" aria-label="Your icon">' + ICONS.map(i => '<button type="button" data-icon="' + i + '" aria-pressed="false" aria-label="Icon ' + i + '">' + i + '</button>').join('') + '</div>';
+  before.parentNode.insertBefore(iconBox, before);
+  iconBox.addEventListener('click', e => { const b = e.target.closest('[data-icon]'); if (b) setPickedIcon(b.dataset.icon); });
+  return iconBox;
+}
+function setPickedIcon(ic) { const box = iconPicker(); if (!box) return; box.dataset.icon = ic || ''; box.querySelectorAll('[data-icon]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.icon === ic))); }
+// no pick = a random icon, so every name still stands out
+const pickedIcon = () => { const box = iconPicker(); return box && ICONS.includes(box.dataset.icon) ? box.dataset.icon : ICONS[Math.floor(Math.random() * ICONS.length)]; };
+
+// ---------- "practice this" links from My Report: ?focus=<skill> sets the game up for that skill ----------
+function focusToast(html) {
+  const d = document.createElement('div'); d.setAttribute('role', 'status');
+  d.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:300;max-width:min(560px,92vw);padding:12px 18px;border-radius:14px;background:#141d2c;color:#f1ece0;border:2px solid #ffc85c;box-shadow:0 10px 30px rgba(0,0,0,.5);font:600 16px/1.35 system-ui,sans-serif;text-align:center';
+  d.innerHTML = html; document.body.appendChild(d); setTimeout(() => d.remove(), 8000);
+}
+function applyFocusFromUrl() {
+  const q = new URLSearchParams(location.search), f = q.get('focus'); if (!f) return;
+  q.delete('focus'); history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash);
+  try { applyFocus(f); } catch (e) { console.warn('focus link:', e); }
+}
+function applyFocus(label) {
+  const L = String(label);
+  const offer = (title, text, setup) => showOverlay('Practice', title, text,
+    ['Start practice', () => { ensureAudio(); $('overlay').hidden = true; setup(); goTo('game', startGame); }], ['Not now', () => { $('overlay').hidden = true; }], '');
+  const notes = () => { $('gametype-notes').checked = true; settings.game = 'notes'; $('mode-practice').checked = true; };
+  const ivls = () => { $('gametype-intervals').checked = true; settings.game = 'intervals'; $('mode-practice').checked = true; };
+  const clef = { 'Treble clef notes': 'treble', 'Bass clef notes': 'bass', 'Alto clef notes': 'alto' }[L];
+  if (clef) return offer(L, 'Calm water and no lanterns to lose. Just you and the ' + clef + ' clef.', () => { notes(); $('clef-' + clef).checked = true; applySettings(); });
+  if (L === 'Ledger lines') return offer('Ledger lines', 'Boats sail above and below the staff. Count the lines out from the staff!', () => { notes(); for (const st of ['treble', 'bass', 'alto']) settings.range[st] = LEDGER[st].slice(); $('filter-all').checked = true; applySettings(); });
+  if (L === 'Intervals') return offer('Intervals', 'Practice mode: name the distance between the two notes.', () => { ivls(); applySettings(); });
+  const ordN = Object.keys(ORD).find(n => ORD[n] === L);
+  const iv = IVL_BY_ID[L] ? L : ordN ? 'n' + ordN : null;
+  if (iv) return offer('Interval: ' + L, 'Every boat carries a ' + L + '. Spot it fast!', () => {
+    ivls(); settings.ivl = iv[0] === 'n' ? 'easy' : IVL_BY_ID[iv].tier === 3 ? 'hard' : 'medium'; $('ivl-' + settings.ivl).checked = true; applySettings(); drillIvls = [iv];
+  });
+  const m = L.match(/^([A-G])([♯♭]?)(\d)/);
+  if (m) {
+    const li = LETTERS.indexOf(m[1]), acc = m[2] === '♯' ? 1 : m[2] === '♭' ? -1 : 0, d = li + 7 * +m[3], name = L.split(' in ')[0];
+    const st = [settings.clef === 'grand' ? 'treble' : settings.clef, 'treble', 'bass', 'alto'].find(s => BOTTOM[s] != null && d - BOTTOM[s] >= LEDGER[s][0] && d - BOTTOM[s] <= LEDGER[s][1]);
+    if (st) return offer('Drill ' + name, 'Every boat carries ' + name + '. Name it every time!', () => { notes(); $('clef-' + st).checked = true; applySettings(); drill = [{ staff: st, p: d - BOTTOM[st], acc }]; });
+  }
+  focusToast('Pick your clef and range, then light the lamp to practice!');
 }
 function showWelcome(keep) {
   const p = keep ? getProfile() : null;
+  setPickedIcon(p && p.icon);
   $('w-first').value = p ? p.first : ''; $('w-init').value = p ? p.init : ''; $('w-code').value = p ? p.classCode || '' : '';
   $('w-solo').checked = !!(p && !p.classCode); $('w-code').disabled = $('w-solo').checked; $('w-error').textContent = '';
   if (game.running && !game.paused) pause(true);
@@ -1057,7 +1112,7 @@ async function submitWelcome(e) {
     } catch { err.textContent = "Couldn't check the code. Check your internet connection and try again."; return; }
     finally { $('w-go').disabled = false; $('w-go').textContent = 'Set sail'; }
   }
-  setProfile({ first, init, classCode: solo ? '' : code, className, classOwner });
+  setProfile({ first, init, classCode: solo ? '' : code, className, classOwner, icon: pickedIcon() });
   $('welcome').hidden = true; updateWho(); syncSaveBox();
 }
 function playAsGuest() { try { sessionStorage.setItem(GUEST_KEY, '1'); } catch {} $('welcome').hidden = true; updateWho(); syncSaveBox(); }
@@ -1320,7 +1375,7 @@ function renderBoard() {
     if (r.id && r.id === savedRunId) li.classList.add('mine');
     const rank = document.createElement('span'); rank.className = 'rank'; rank.textContent = i + 1;
     const who = document.createElement('span'); who.className = 'who';
-    const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = r.name || 'Player';
+    const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = (ICONS.includes(r.icon) ? r.icon + ' ' : '') + (r.name || 'Player');
     if (r.dev) { const t = document.createElement('span'); t.className = 'devtag'; t.title = 'Developer score'; t.textContent = 'DEV'; nm.append(' ', t); }
     const tags = document.createElement('span'); tags.className = 'tags';
     tags.textContent = [DIFF_TITLE[r.diff] || '', CLEF_SHORT[r.clef] || '', ANSWER_TITLE[r.answer] || '', r.names === 'solfege' ? 'Solfège' : ''].filter(Boolean).join(' · ');
@@ -1358,6 +1413,7 @@ async function saveRun() {
     const { fs, db } = await fb();
     const data = { name: displayName(p), score: lastRun.score, hits: lastRun.hits, acc: lastRun.acc, level: lastRun.level || 0, mode: lastRun.mode, diff: lastRun.diff, clef: lastRun.clef, answer: lastRun.answer, names: lastRun.names, created_at: fs.serverTimestamp() };
     if (p.classCode) data.class_code = p.classCode;
+    if (iconOf(p)) data.icon = iconOf(p);
     if (await devPost(data.name, fbAuth, async () => { const { auth, authMod } = await fbAuth(); return (await authMod.signInWithPopup(auth, new authMod.GoogleAuthProvider())).user.email; })) { data.dev = true; data.name = DEV_NAME; }
     const ref = await wait(fs.addDoc(fs.collection(db, 'tidal_scores'), data));
     savedRunId = ref.id;
@@ -2678,6 +2734,7 @@ function boot(data) {
   requestAnimationFrame(t => { last = t; frame(t); });
   updateWho();
   if (!getProfile() && !isGuest()) showWelcome(false); else refreshClass();
+  applyFocusFromUrl();
   try { if (localStorage.getItem('tidaltones:midi') === '1') connectMidi(); } catch {}
 }
 boot({});
