@@ -42,62 +42,58 @@ body[data-view="splash"] h1 { font-size: clamp(54px, 11vw, 112px); line-height: 
 body[data-view="splash"] h1::after { content: ""; display: block; width: .9em; height: 4px; margin-top: .14em; background: var(--lamp); box-shadow: 0 0 18px var(--lamp); border-radius: 2px; }
 body[data-game="intervals"] .notes-only, body:not([data-game="intervals"]) .ivl-only, body:not([data-view="splash"]) .splash-only, body:not([data-view="game"]) .game-only, body:not([data-view="board"]) .board-only, body[data-view="board"] .stage, body:not([data-view="teacher"]) .teacher-only, body[data-view="teacher"] .stage, body[data-view="game"] #teacher-btn { display: none !important; }
 
-.hero { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 32px; margin-top: -4px; }
-.tagline { margin: 0; font-size: 18px; line-height: 1.5; color: var(--moon); max-width: 44ch; text-wrap: pretty; }
-.howto { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 20px; }
-.howto li { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--mist); max-width: 22ch; }
-.howto b { flex: none; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--lamp); color: var(--lamp); display: grid; place-items: center; font-size: 13px; padding-top: 2px; }
-
-.setup { display: flex; flex-direction: column; gap: 18px; }
-.simple { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
-.simple .diff { grid-column: 1 / -1; }
-.simple > * { min-width: 0; }
-.gamepick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; border: 0; margin: 0; padding: 0; }
-.gamepick input { position: absolute; opacity: 0; pointer-events: none; }
-.gamepick label { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--rope); border-radius: 14px; background: var(--deep); cursor: pointer; font-family: var(--f-display); font-size: 22px; color: var(--mist); }
-.gamepick label svg { height: 40px; width: auto; flex: none; }
-.gamepick label:hover { border-color: var(--mist); color: var(--moon); }
-.gamepick input:checked + label { border-color: var(--lamp); color: var(--lamp); background: color-mix(in srgb, var(--lamp) 12%, var(--deep)); box-shadow: inset 0 0 0 1px var(--lamp); }
-.gamepick input:focus-visible + label { outline: 2px solid var(--lamp); outline-offset: 2px; }
-.simple.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.diff { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
-body[data-game="intervals"] .diff { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-@media (max-width: 640px) { .diff, body[data-game="intervals"] .diff { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.diff input { position: absolute; opacity: 0; pointer-events: none; }
-.diff label { display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 14px 12px 12px; border: 1px solid var(--rope); border-radius: 14px; background: var(--deep); cursor: pointer; min-height: 96px; }
-.diff label b { font-family: var(--f-display); font-weight: 400; font-size: 24px; color: var(--moon); line-height: 1; }
-.diff label span { font-size: 13.5px; color: var(--mist); line-height: 1.35; }
-.diff label:hover { border-color: var(--mist); }
-.diff input:checked + label { border-color: var(--lamp); background: color-mix(in srgb, var(--lamp) 12%, var(--deep)); box-shadow: inset 0 0 0 1px var(--lamp); }
-.diff input:checked + label b { color: var(--lamp); }
-.diff input:focus-visible + label { outline: 2px solid var(--lamp); outline-offset: 2px; }
-.tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 118px; padding: 10px; border: 1px solid var(--rope); border-radius: 14px; background: var(--deep); color: var(--moon); cursor: pointer; font: inherit; }
-.tile:hover { border-color: var(--lamp); }
-.tile .pic { height: 72px; display: grid; place-items: center; transition: transform .25s; }
-.tile.flip .pic { transform: rotateY(90deg); }
-.tile .glyph { font-family: var(--f-music); font-size: 56px; line-height: 1; }
-.tile .glyph.stack { display: flex; flex-direction: column; font-size: 30px; line-height: .95; }
-.tile .glyph.stack span:last-child { margin-top: -2px; }
-.tile svg { width: 76px; height: 48px; }
-.tile svg.clefpic { width: auto; height: 72px; overflow: visible; }
-.tile svg.icon { width: 52px; height: 52px; fill: none; stroke: var(--lamp); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-.tile .cap { font-weight: 700; font-size: 15px; }
-.tile .sub { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--mist); }
-.adv-btn { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; font: 600 13px var(--f-ui); letter-spacing: .1em; text-transform: uppercase; color: var(--mist); background: none; border: 1px solid var(--rope); border-radius: 999px; padding: 8px 14px 6px; cursor: pointer; }
-.adv-btn:hover { color: var(--moon); border-color: var(--mist); }
-.adv-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s; margin-top: -2px; }
-.adv-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
-.advanced { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 18px 32px; border-top: 1px solid var(--rope); padding-top: 16px; }
-.custom-note { font-size: 13px; color: var(--mist); margin: -8px 0 0; }
-@media (max-width: 760px) { .advanced { grid-template-columns: minmax(0, 1fr); } }
-.setup-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+/* ---------- start screen: the big button sits on the sea, three dropdowns below it, everything else in "More options" ---------- */
+.setup { display: flex; flex-direction: column; gap: 14px; }
+.src { display: none !important; }                             /* the original radios stay as the source of truth; the dropdowns drive them */
+.play-cta { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; text-align: center; background: radial-gradient(60% 75% at 55% 50%, color-mix(in srgb, var(--deep) 30%, transparent), color-mix(in srgb, var(--deep) 78%, transparent)); }
+.stage:has(.overlay:not([hidden])) .play-cta { display: none; }
+.play-title { font-family: var(--f-display); font-weight: 400; font-size: clamp(24px, 4vw, 38px); line-height: 1; margin: 0; color: var(--moon); text-shadow: 0 2px 18px var(--deep); }
+.play-title span { color: var(--lamp); }
+.btn.play-big { font-size: clamp(17px, 2.4vw, 22px); padding: 16px 38px 13px; display: inline-flex; align-items: center; gap: 12px; box-shadow: 0 0 0 4px color-mix(in srgb, var(--lamp) 22%, transparent), 0 0 44px -8px var(--lamp); animation: lampPulse 2.4s ease-in-out infinite; }
+.btn.play-big svg { width: .75em; height: .75em; margin-top: -2px; }
+@keyframes lampPulse { 50% { box-shadow: 0 0 0 9px color-mix(in srgb, var(--lamp) 10%, transparent), 0 0 56px -6px var(--lamp); } }
+@media (prefers-reduced-motion: reduce) { .btn.play-big { animation: none; } }
+.play-sum { font-weight: 600; font-size: 16px; color: var(--moon); background: color-mix(in srgb, var(--deep) 80%, transparent); border: 1px solid var(--rope); border-radius: 999px; padding: 6px 14px 4px; }
+.play-sum b { color: var(--lamp); }
+.play-hint { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 8px; font-size: 13px; color: var(--mist); }
+.play-hint .best-note { flex-basis: 100%; font-variant-numeric: tabular-nums; }
+.play-hint .best-note b { color: var(--lamp); }
+@media (hover: none) and (pointer: coarse) { .play-hint .kbd-hint { display: none; } }     /* phones and tablets: no space bar to press */
+.linkish { font: 600 13px var(--f-ui); color: var(--lamp); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 10px 12px; align-items: end; }
+@media (max-width: 760px) { .quick { grid-template-columns: repeat(2, minmax(0, 1fr)); } .quick .more-btn { grid-column: 2; } .quick .dd:nth-of-type(2) .dd-menu { left: auto; right: 0; } }
+.dd { position: relative; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.dd > span { font-size: 12px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--lamp); }
+.dd .sel { width: 100%; text-align: left; font: 600 17px var(--f-ui); color: var(--moon); background: var(--deep); border: 1px solid var(--rope); border-radius: 12px; padding: 12px 36px 9px 14px; cursor: pointer; position: relative; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dd .sel::after { content: ""; position: absolute; right: 15px; top: 50%; width: 7px; height: 7px; border: solid var(--mist); border-width: 0 2px 2px 0; transform: translateY(-75%) rotate(45deg); }
+.dd .sel:hover, .dd .sel[aria-expanded="true"] { border-color: var(--lamp); }
+.dd-menu { position: absolute; z-index: 30; top: calc(100% + 6px); left: 0; min-width: 100%; width: max-content; max-width: min(340px, 92vw); background: var(--tide); border: 1px solid var(--lamp); border-radius: 14px; padding: 6px; box-shadow: 0 18px 40px -10px #000; display: flex; flex-direction: column; gap: 2px; }
+.dd-menu [role="option"] { cursor: pointer; padding: 9px 12px 7px; border-radius: 10px; display: flex; flex-direction: column; gap: 1px; text-align: left; font: inherit; color: var(--moon); background: none; border: 0; }
+.dd-menu [role="option"]:hover, .dd-menu [role="option"]:focus-visible { background: var(--tide-2); outline: none; box-shadow: inset 0 0 0 1px var(--rope); }
+.dd-menu b { font-size: 16px; font-weight: 700; }
+.dd-menu small { color: var(--mist); font-size: 13px; line-height: 1.3; }
+.dd-menu [aria-selected="true"] b { color: var(--lamp); }
+.dd-menu [aria-selected="true"] b::before { content: "✓ "; }
+.more-btn { font: 600 13px var(--f-ui); letter-spacing: .1em; text-transform: uppercase; color: var(--mist); background: none; border: 1px solid var(--rope); border-radius: 12px; padding: 14px 16px 11px; cursor: pointer; white-space: nowrap; }
+.more-btn:hover, .more-btn[aria-expanded="true"] { color: var(--moon); border-color: var(--mist); }
+.more { border: 1px solid var(--rope); border-radius: 12px; background: var(--deep); overflow: hidden; }
+.mtabs { display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 1px solid var(--rope); padding: 4px 8px 0; }
+.mtabs button { font: 700 12px var(--f-ui); letter-spacing: .14em; text-transform: uppercase; color: var(--mist); background: none; border: 0; border-bottom: 2px solid transparent; padding: 11px 12px 8px; cursor: pointer; }
+.mtabs button[aria-selected="true"] { color: var(--moon); border-color: var(--lamp); }
+.mpanel { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px 28px; padding: 16px; }
+.mpanel .wide { grid-column: 1 / -1; }
+.custom-note { font-size: 13px; color: var(--mist); margin: 0; }
 .setup .ranges { justify-content: flex-start; }
 .small { font-size: 13px; margin: 0 0 8px; }
-.launch { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; border-top: 1px solid var(--rope); padding-top: 16px; }
-.launch .best-note { margin-left: auto; color: var(--mist); font-size: 14px; font-variant-numeric: tabular-nums; }
-.launch .best-note b { color: var(--lamp); font-size: 18px; }
 .btn.big { font-size: 17px; padding: 17px 36px 14px; box-shadow: 0 0 34px -10px var(--lamp); }
-@media (max-width: 760px) { .launch .best-note { margin-left: 0; } }
+.howto-pop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, var(--deep) 80%, transparent); }
+.howto-pop .card { width: min(500px, 100%); box-shadow: 0 0 60px -20px var(--lamp); }
+.howto-pop h2 { font-family: var(--f-display); font-weight: 400; font-size: 32px; line-height: 1; margin: 0; }
+.howto-pop ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.howto-pop li { display: flex; gap: 12px; align-items: flex-start; font-size: 16px; }
+.howto-pop li > i { flex: none; font-style: normal; width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--lamp); color: var(--lamp); display: grid; place-items: center; font-size: 13px; font-weight: 700; padding-top: 2px; }
+.howto-pop li b { color: var(--lamp); }
+.howto-pop .btn { align-self: center; }
 
 .stage { view-transition-name: hl-stage; }
 #sound-btn { view-transition-name: hl-sound; }
@@ -381,17 +377,14 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
     </div>
   </header>
 
-  <section class="hero splash-only">
-    <p class="tagline">Boats are sailing for the rocks. Name the note on each one and the lighthouse guides it safely into the harbor.</p>
-    <ol class="howto">
-      <li><b>1</b>The beam finds the next boat.</li>
-      <li><b>2</b>Name its note with a letter key or the pad.</li>
-      <li><b>3</b>Every 8 boats home starts a faster level.</li>
-    </ol>
-  </section>
-
   <div class="stage" id="stage">
     <canvas id="cv" aria-label="Staff at sea with notes sailing toward the lighthouse"></canvas>
+    <div class="play-cta splash-only" id="play-cta">
+      <p class="play-title">Ready to <span>sail?</span></p>
+      <button class="btn play-big" id="start-btn" type="button"><svg viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><path d="M1 0 L10 5 L1 10 Z"/></svg>Light the lamp</button>
+      <div class="play-sum" id="play-sum"></div>
+      <div class="play-hint"><span class="kbd-hint">or press <kbd>Space</kbd></span><span class="kbd-hint" aria-hidden="true">·</span><button type="button" class="linkish" id="howto-btn">How to play</button><span class="best-note" id="best-note" hidden>Best with these settings: <b id="setup-best">0</b></span></div>
+    </div>
     <div class="overlay" id="overlay" hidden>
       <div class="ov-inner">
         <div class="tag" id="ov-tag"></div>
@@ -406,16 +399,23 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
     </div>
   </div>
 
-  <form class="card setup splash-only" id="settings" onsubmit="return false">
+  <form class="setup splash-only" id="settings" onsubmit="return false">
     <div class="assign" id="assign-banner" hidden></div>
-    <h3>Chart your course</h3>
-    <fieldset class="gamepick">
-      <legend class="sr-only">Game</legend>
-      <input type="radio" name="gameType" id="gametype-notes" value="notes"><label for="gametype-notes"><span id="gp-notes-pic"></span>Note reading</label>
-      <input type="radio" name="gameType" id="gametype-intervals" value="intervals"><label for="gametype-intervals"><span id="gp-ivl-pic"></span>Intervals</label>
-    </fieldset>
-    <div class="simple" id="simple">
-      <fieldset class="diff" id="diff">
+    <div class="quick" id="quick">
+      <div class="dd" data-name="gameType"><span id="dd-gameType">Game</span></div>
+      <div class="dd" data-name="level"><span id="dd-level">Difficulty</span></div>
+      <div class="dd" data-name="mode"><span id="dd-mode">Mode</span></div>
+      <button type="button" class="more-btn" id="more-btn" aria-expanded="false" aria-controls="more">⚙ More options</button>
+    </div>
+    <p class="custom-note" id="custom-note" hidden>Custom settings from More options. Pick a difficulty to reset them.</p>
+    <p class="midi-note" id="midi-note" hidden>Have a MIDI keyboard? Plug it in and press <b>MIDI keyboard</b> at the top of the page.</p>
+    <div class="src">
+      <fieldset>
+        <legend class="sr-only">Game</legend>
+        <input type="radio" name="gameType" id="gametype-notes" value="notes"><label for="gametype-notes"><b>Note reading</b><span>Name the note on each boat.</span></label>
+        <input type="radio" name="gameType" id="gametype-intervals" value="intervals"><label for="gametype-intervals"><b>Intervals</b><span>Name the distance between two notes.</span></label>
+      </fieldset>
+      <fieldset>
         <legend class="sr-only">Difficulty</legend>
         <input type="radio" name="level" id="level-newbie" value="newbie" class="notes-only"><label for="level-newbie" class="notes-only"><b>Newbie</b><span id="desc-newbie"></span></label>
         <input type="radio" name="level" id="level-easy" value="easy"><label for="level-easy"><b>Easy</b><span id="desc-easy"></span></label>
@@ -423,26 +423,6 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
         <input type="radio" name="level" id="level-hard" value="hard"><label for="level-hard"><b>Hard</b><span id="desc-hard"></span></label>
         <input type="radio" name="level" id="level-expert" value="expert" class="notes-only"><label for="level-expert" class="notes-only"><b>Expert</b><span id="desc-expert"></span></label>
       </fieldset>
-      <button type="button" class="tile" id="mode-tile" aria-label="Switch between levels, speed round and practice">
-        <span class="pic" id="mode-pic"></span>
-        <span class="cap" id="mode-cap"></span>
-        <span class="sub">Tap to switch</span>
-      </button>
-      <button type="button" class="tile" id="game-tile" aria-label="Switch between note names and piano">
-        <span class="pic" id="game-pic"></span>
-        <span class="cap" id="game-cap"></span>
-        <span class="sub">Tap to switch</span>
-      </button>
-      <button type="button" class="tile" id="clef-tile" aria-label="Switch between treble, bass and grand staff">
-        <span class="pic" id="clef-pic"></span>
-        <span class="cap" id="clef-cap"></span>
-        <span class="sub">Tap to switch</span>
-      </button>
-    </div>
-    <p class="custom-note" id="custom-note" hidden>Custom settings from Advanced options. Pick Easy, Medium or Hard to reset them.</p>
-    <button type="button" class="adv-btn" id="adv-btn" aria-expanded="false" aria-controls="advanced">Advanced options <svg viewBox="0 0 20 20"><path d="M5 7.5l5 5 5-5"/></svg></button>
-    <div class="advanced" id="advanced" hidden>
-    <div class="setup-col">
       <fieldset>
         <legend>Game mode</legend>
         <div class="seg">
@@ -452,87 +432,91 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
         </div>
         <p class="muted small" id="mode-desc"></p>
       </fieldset>
-      <fieldset>
-        <legend>Clef</legend>
-        <div class="seg">
-          <input type="radio" name="clef" id="clef-treble" value="treble" checked><label for="clef-treble">Treble</label>
-          <input type="radio" name="clef" id="clef-bass" value="bass"><label for="clef-bass">Bass</label>
-          <input type="radio" name="clef" id="clef-alto" value="alto"><label for="clef-alto">Alto</label>
-          <input type="radio" name="clef" id="clef-grand" value="grand"><label for="clef-grand">Grand</label>
-        </div>
-      </fieldset>
-      <fieldset id="keysig-field">
-        <legend>Key signatures</legend>
-        <div class="presets" id="key-presets">
-          <button type="button" data-p="all">All</button>
-          <button type="button" data-p="2">Up to 2 ♯/♭</button>
-          <button type="button" data-p="4">Up to 4 ♯/♭</button>
-          <button type="button" data-p="s">Sharp keys</button>
-          <button type="button" data-p="f">Flat keys</button>
-        </div>
-        <div class="keychips" id="keychips"></div>
-        <p class="muted small" id="key-count" style="margin-top:8px"></p>
-      </fieldset>
-      <fieldset class="ivl-only">
-        <legend>Interval types</legend>
-        <div class="seg">
-          <input type="radio" name="ivl" id="ivl-easy" value="easy"><label for="ivl-easy">Numbers only</label>
-          <input type="radio" name="ivl" id="ivl-medium" value="medium" checked><label for="ivl-medium">Major, minor, perfect</label>
-          <input type="radio" name="ivl" id="ivl-hard" value="hard"><label for="ivl-hard">Every quality</label>
-        </div>
-      </fieldset>
-      <fieldset class="notes-only" id="range-field">
-        <legend>Range</legend>
-        <p class="muted small">Left arrows move the lowest note. Right arrows move the highest.</p>
-        <div class="ranges" id="ranges"></div>
-      </fieldset>
     </div>
-    <div class="setup-col">
-      <fieldset class="notes-only">
-        <legend>Answer with</legend>
-        <div class="seg">
-          <input type="radio" name="answer" id="answer-names" value="names" checked><label for="answer-names">Note names</label>
-          <input type="radio" name="answer" id="answer-any" value="any"><label for="answer-any">Piano · any octave</label>
-          <input type="radio" name="answer" id="answer-exact" value="exact"><label for="answer-exact">Piano · exact key</label>
-        </div>
-        <p class="muted small" id="answer-desc" style="margin-top:8px"></p>
-      </fieldset>
-      <fieldset id="labels-field" hidden>
-        <legend>Letter names on the piano keys</legend>
-        <div class="seg">
-          <input type="radio" name="labels" id="labels-c" value="c" checked><label for="labels-c">Only on C</label>
-          <input type="radio" name="labels" id="labels-all" value="all"><label for="labels-all">On every key</label>
-        </div>
-      </fieldset>
-      <fieldset class="notes-only">
-        <legend>Notes</legend>
-        <div class="seg">
-          <input type="radio" name="filter" id="filter-all" value="all" checked><label for="filter-all">Lines &amp; spaces</label>
-          <input type="radio" name="filter" id="filter-lines" value="lines"><label for="filter-lines">Lines</label>
-          <input type="radio" name="filter" id="filter-spaces" value="spaces"><label for="filter-spaces">Spaces</label>
-        </div>
-      </fieldset>
-      <fieldset class="notes-only">
-        <legend>Accidentals</legend>
-        <div class="seg">
-          <input type="radio" name="acc" id="acc-off" value="off" checked><label for="acc-off">Naturals only</label>
-          <input type="radio" name="acc" id="acc-on" value="on"><label for="acc-on">Add ♯ and ♭</label>
-        </div>
-      </fieldset>
-      <fieldset>
-        <legend>Note names</legend>
-        <div class="seg">
-          <input type="radio" name="names" id="names-letters" value="letters" checked><label for="names-letters">C D E</label>
-          <input type="radio" name="names" id="names-solfege" value="solfege"><label for="names-solfege">Do Re Mi</label>
-        </div>
-      </fieldset>
-    </div>
-    </div>
-    <div class="launch">
-      <button class="btn big" id="start-btn" type="button">Light the lamp</button>
-      <span class="muted">or press <kbd>Space</kbd></span>
-      <span class="best-note">Best with these settings: <b id="setup-best">0</b></span>
-      <p class="midi-note" id="midi-note">Have a MIDI keyboard? Plug it in and press <b>MIDI keyboard</b> at the top of the page.</p>
+    <div class="more" id="more" hidden>
+      <div class="mtabs" role="tablist" aria-label="More options">
+        <button type="button" role="tab" data-tab="staff" id="tab-staff" aria-controls="panel-staff" aria-selected="true">Staff</button>
+        <button type="button" role="tab" data-tab="answers" id="tab-answers" aria-controls="panel-answers" aria-selected="false">Answers</button>
+        <button type="button" role="tab" data-tab="keys" id="tab-keys" aria-controls="panel-keys" aria-selected="false">Keys &amp; intervals</button>
+      </div>
+      <div class="mpanel" data-panel="staff" id="panel-staff" role="tabpanel" aria-labelledby="tab-staff">
+        <fieldset>
+          <legend>Clef</legend>
+          <div class="seg">
+            <input type="radio" name="clef" id="clef-treble" value="treble" checked><label for="clef-treble">Treble</label>
+            <input type="radio" name="clef" id="clef-bass" value="bass"><label for="clef-bass">Bass</label>
+            <input type="radio" name="clef" id="clef-alto" value="alto"><label for="clef-alto">Alto</label>
+            <input type="radio" name="clef" id="clef-grand" value="grand"><label for="clef-grand">Grand</label>
+          </div>
+        </fieldset>
+        <fieldset class="notes-only">
+          <legend>Notes</legend>
+          <div class="seg">
+            <input type="radio" name="filter" id="filter-all" value="all" checked><label for="filter-all">Lines &amp; spaces</label>
+            <input type="radio" name="filter" id="filter-lines" value="lines"><label for="filter-lines">Lines</label>
+            <input type="radio" name="filter" id="filter-spaces" value="spaces"><label for="filter-spaces">Spaces</label>
+          </div>
+        </fieldset>
+        <fieldset class="notes-only">
+          <legend>Accidentals</legend>
+          <div class="seg">
+            <input type="radio" name="acc" id="acc-off" value="off" checked><label for="acc-off">Naturals only</label>
+            <input type="radio" name="acc" id="acc-on" value="on"><label for="acc-on">Add ♯ and ♭</label>
+          </div>
+        </fieldset>
+        <fieldset class="notes-only wide" id="range-field">
+          <legend>Range</legend>
+          <p class="muted small">Left arrows move the lowest note. Right arrows move the highest.</p>
+          <div class="ranges" id="ranges"></div>
+        </fieldset>
+      </div>
+      <div class="mpanel" data-panel="answers" id="panel-answers" role="tabpanel" aria-labelledby="tab-answers" hidden>
+        <fieldset class="notes-only">
+          <legend>Answer with</legend>
+          <div class="seg">
+            <input type="radio" name="answer" id="answer-names" value="names" checked><label for="answer-names">Note names</label>
+            <input type="radio" name="answer" id="answer-any" value="any"><label for="answer-any">Piano · any octave</label>
+            <input type="radio" name="answer" id="answer-exact" value="exact"><label for="answer-exact">Piano · exact key</label>
+          </div>
+          <p class="muted small" id="answer-desc" style="margin-top:8px"></p>
+        </fieldset>
+        <fieldset>
+          <legend>Note names</legend>
+          <div class="seg">
+            <input type="radio" name="names" id="names-letters" value="letters" checked><label for="names-letters">C D E</label>
+            <input type="radio" name="names" id="names-solfege" value="solfege"><label for="names-solfege">Do Re Mi</label>
+          </div>
+        </fieldset>
+        <fieldset id="labels-field" hidden>
+          <legend>Letter names on the piano keys</legend>
+          <div class="seg">
+            <input type="radio" name="labels" id="labels-c" value="c" checked><label for="labels-c">Only on C</label>
+            <input type="radio" name="labels" id="labels-all" value="all"><label for="labels-all">On every key</label>
+          </div>
+        </fieldset>
+      </div>
+      <div class="mpanel" data-panel="keys" id="panel-keys" role="tabpanel" aria-labelledby="tab-keys" hidden>
+        <fieldset class="ivl-only wide">
+          <legend>Interval types</legend>
+          <div class="seg">
+            <input type="radio" name="ivl" id="ivl-easy" value="easy"><label for="ivl-easy">Numbers only</label>
+            <input type="radio" name="ivl" id="ivl-medium" value="medium" checked><label for="ivl-medium">Major, minor, perfect</label>
+            <input type="radio" name="ivl" id="ivl-hard" value="hard"><label for="ivl-hard">Every quality</label>
+          </div>
+        </fieldset>
+        <fieldset id="keysig-field" class="wide">
+          <legend>Key signatures</legend>
+          <div class="presets" id="key-presets">
+            <button type="button" data-p="all">All</button>
+            <button type="button" data-p="2">Up to 2 ♯/♭</button>
+            <button type="button" data-p="4">Up to 4 ♯/♭</button>
+            <button type="button" data-p="s">Sharp keys</button>
+            <button type="button" data-p="f">Flat keys</button>
+          </div>
+          <div class="keychips" id="keychips"></div>
+          <p class="muted small" id="key-count" style="margin-top:8px"></p>
+        </fieldset>
+      </div>
     </div>
   </form>
 
@@ -1107,7 +1091,8 @@ function applyFocus(label) {
     const st = [settings.clef === 'grand' ? 'treble' : settings.clef, 'treble', 'bass', 'alto'].find(s => BOTTOM[s] != null && d - BOTTOM[s] >= LEDGER[s][0] && d - BOTTOM[s] <= LEDGER[s][1]);
     if (st) return offer('Drill ' + name, 'Every boat carries ' + name + '. Name it every time!', () => { notes(); $('clef-' + st).checked = true; applySettings(); drill = [{ staff: st, p: d - BOTTOM[st], acc }]; });
   }
-  focusToast('Pick your clef and range, then light the lamp to practice!');
+  $('more').hidden = false; $('more-btn').setAttribute('aria-expanded', 'true'); showMoreTab('staff');
+  focusToast('Pick your clef and range in More options, then light the lamp to practice!');
 }
 // "+ Add another class": extra code boxes under the main one (3 classes in all)
 function addCodeBox(v) {
@@ -1517,7 +1502,7 @@ function toHarbor() {
   game.running = false; game.paused = false; game.over = false;
   notes = []; homeward = []; floaters = []; particles = []; banner = null; spawnT = .6;
   $('overlay').hidden = true; $('results').hidden = true; drill = null; drillIvls = null;
-  goTo('splash', () => { hud(); showBest(); });
+  goTo('splash', () => { hud(); showBest(); syncSimple(); });
 }
 function quitToHarbor() { toHarbor(); }
 
@@ -1625,6 +1610,7 @@ function syncMidi() {
   $('midi-note').innerHTML = midiState === 'ready'
     ? `<b>${midiNames.map(n => n.replace(/[<>&]/g, '')).join(', ')}</b> is connected. Play the notes on your keyboard${isIvl() ? ' (intervals still use the on-screen pad)' : settings.answer === 'exact' ? ' in the exact octave' : ' in any octave'}.`
     : note;
+  $('midi-note').hidden = midiState === 'off';
   if (view() === 'game') syncPad();
 }
 function onMidi(e) {
@@ -2028,7 +2014,7 @@ function hud() {
   [...$('hud-lamps').children].forEach((el, i) => { const v = Math.max(0, Math.min(2, h - 2 * i)); el.classList.toggle('off', v === 0); el.classList.toggle('dim', v === 1); });
 }
 function hudTime() { $('hud-level-k').textContent = 'Time'; const t = Math.ceil(game.running ? game.time : 60); $('hud-level').textContent = Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); }
-function showBest() { const b = store.get(bestKey(), 0).toLocaleString(); $('hud-best').textContent = b; $('setup-best').textContent = b; }
+function showBest() { const n = store.get(bestKey(), 0), b = n.toLocaleString(); $('hud-best').textContent = b; $('setup-best').textContent = b; $('best-note').hidden = !(n > 0); }
 
 function keyButton(li, acc) {
   const b = document.createElement('button'); b.type = 'button'; b.dataset.li = li; b.dataset.acc = acc;
@@ -2225,10 +2211,7 @@ $('ranges').addEventListener('click', e => {
   (again && !again.disabled ? again : $('ranges').querySelector(`.arr[data-s="${s}"]:not(:disabled)`))?.focus();
 });
 
-/* ---------- simple setup: difficulty, game and clef tiles ---------- */
-const PIANO_SVG = '<svg viewBox="0 0 76 48" aria-hidden="true"><rect x="1" y="1" width="74" height="46" rx="4" fill="var(--moon)"/><g stroke="#8fa3ad" stroke-width="1"><line x1="11.6" y1="1" x2="11.6" y2="47"/><line x1="22.1" y1="1" x2="22.1" y2="47"/><line x1="32.7" y1="1" x2="32.7" y2="47"/><line x1="43.3" y1="1" x2="43.3" y2="47"/><line x1="53.9" y1="1" x2="53.9" y2="47"/><line x1="64.4" y1="1" x2="64.4" y2="47"/></g><g fill="var(--deep)"><rect x="8.1" y="1" width="7" height="28" rx="1.5"/><rect x="18.6" y="1" width="7" height="28" rx="1.5"/><rect x="39.8" y="1" width="7" height="28" rx="1.5"/><rect x="50.4" y="1" width="7" height="28" rx="1.5"/><rect x="60.9" y="1" width="7" height="28" rx="1.5"/></g></svg>';
-const CLEF_CYCLE = ['treble', 'bass', 'grand'];
-const IVL_SVG = '<svg viewBox="0 0 76 56" aria-hidden="true"><g stroke="var(--moon)" stroke-opacity=".6" stroke-width="1.2"><line x1="2" x2="74" y1="10" y2="10"/><line x1="2" x2="74" y1="19" y2="19"/><line x1="2" x2="74" y1="28" y2="28"/><line x1="2" x2="74" y1="37" y2="37"/><line x1="2" x2="74" y1="46" y2="46"/></g><g fill="var(--lamp)"><ellipse cx="38" cy="46" rx="6.6" ry="4.4"/><ellipse cx="38" cy="23.5" rx="6.6" ry="4.4"/></g><g fill="var(--deep)"><ellipse cx="38" cy="46" rx="3" ry="2" transform="rotate(-60 38 46)"/><ellipse cx="38" cy="23.5" rx="3" ry="2" transform="rotate(-60 38 23.5)"/></g></svg>';
+/* ---------- key signature chips (Intervals, and Expert note reading) ---------- */
 function miniSig(key) {
   const w = 62, h = 28, gp = 4, y = pp => h - 4 - pp * gp / 2; let o = '';
   for (let pp = 0; pp <= 8; pp += 2) o += `<line x1="1" x2="${w - 1}" y1="${y(pp)}" y2="${y(pp)}" stroke="currentColor" stroke-opacity=".5" stroke-width=".8"/>`;
@@ -2255,14 +2238,6 @@ $('key-presets').addEventListener('click', e => {
   settings.keys = MAJOR.filter(k => p === 'all' || (p === 's' && k.sig >= 0) || (p === 'f' && k.sig <= 0) || (+p && Math.abs(k.sig) <= +p)).map(k => k.id);
   drill = null; applySettings();
 });
-const MODE_CYCLE = ['arcade', 'sprint', 'practice'];
-const MODE_TITLE = { arcade: 'Levels', sprint: 'Speed round', practice: 'Practice' };
-const MODE_ICON = {
-  arcade: '<svg class="icon" viewBox="0 0 52 52" aria-hidden="true"><path d="M8 42h10V32h10V22h10V12h6"/><path d="M8 46h36"/></svg>',
-  sprint: '<svg class="icon" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="29" r="16"/><path d="M26 29l7-7"/><path d="M21 8h10M26 8v5M40 15l3-3"/></svg>',
-  practice: '<svg class="icon" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="11" r="4"/><path d="M26 15v29"/><path d="M17 23h18"/><path d="M10 32c1 8 8 12 16 12s15-4 16-12"/><path d="M10 32l-3 3M10 32l3 3M42 32l-3 3M42 32l3 3"/></svg>'
-};
-const CLEF_TITLE = { treble: 'Treble', bass: 'Bass', alto: 'Alto', grand: 'Grand staff' };
 const same = (a, b) => a[0] === b[0] && a[1] === b[1];
 function currentLevel() {
   if (isIvl()) { const a = settings.keys.slice().sort().join(), b = KEY_PRESET[settings.ivl].slice().sort().join(); return a === b ? settings.ivl : 'custom'; }
@@ -2286,22 +2261,12 @@ function rangeText(lv) {
   const st = grand() ? ['treble', 'bass'] : [settings.clef];
   return st.map(s => { const [lo, hi] = lv === 'hard' ? LEDGER[s] : [0, 8]; return PITCH_NAME(BOTTOM[s] + lo) + '–' + PITCH_NAME(BOTTOM[s] + hi); }).join(' and ');
 }
-const INK = { treble: [-.398, 1.334], bass: [.101, .9], alto: [-.01, 1.012] };
-function clefSVG(list) {
-  const H = 72, parts = []; let x = 0;
-  for (const [st, fs] of list) {
-    const [lo, hi] = INK[st], base = H / 2 + (lo + hi) / 2 * fs;
-    parts.push(`<text x="${x}" y="${base.toFixed(1)}" font-size="${fs}" font-family="${F.music.replace(/"/g, "'")}" fill="currentColor">${GLYPH[st]}</text>`);
-    x += fs * (st === 'treble' ? .72 : .8);
-  }
-  return `<svg class="clefpic" viewBox="0 0 ${Math.ceil(x)} ${H}" aria-hidden="true">${parts.join('')}</svg>`;
-}
-const CLEF_SIZE = { treble: 40, bass: 56, alto: 52 };
 function syncSimple() {
   const lv = currentLevel();
   for (const k of ['newbie', 'easy', 'medium', 'hard', 'expert']) $('level-' + k).checked = lv === k;
   $('desc-newbie').textContent = 'Every line and space is labeled, and the boats sail slowly. Practice only';
   $('keysig-field').hidden = !(isIvl() || settings.expert);
+  $('tab-keys').hidden = !(isIvl() || settings.expert);
   $('desc-expert').textContent = 'Like Hard, then a new key signature every level from level ' + EXPERT_FROM;
   $('custom-note').hidden = lv !== 'custom';
   if (isIvl()) {
@@ -2314,39 +2279,111 @@ function syncSimple() {
     $('desc-hard').textContent = 'Sharps, flats and ledger lines, ' + rangeText('hard');
   }
   document.body.dataset.game = settings.game;
-  const piano = settings.answer !== 'names';
-  $('game-pic').innerHTML = piano ? PIANO_SVG : clefSVG([['treble', 40]]);
-  $('game-cap').textContent = piano ? 'Piano' : 'Note names';
-  $('game-tile').hidden = isIvl(); $('simple').classList.toggle('two', isIvl());
   $('gametype-' + settings.game).checked = true;
-  if (!$('gp-notes-pic').firstChild) { $('gp-notes-pic').innerHTML = clefSVG([['treble', 26]]); $('gp-ivl-pic').innerHTML = IVL_SVG.replace('viewBox="0 0 76 56"', 'viewBox="14 4 48 48"'); }
+  if ($('tab-keys').hidden && $('tab-keys').getAttribute('aria-selected') === 'true') showMoreTab('staff');
   renderKeyChips();
-  $('clef-pic').innerHTML = grand() ? clefSVG([['treble', 38], ['bass', 44]]) : clefSVG([[settings.clef, CLEF_SIZE[settings.clef]]]);
-  $('clef-cap').textContent = CLEF_TITLE[settings.clef];
-  $('mode-pic').innerHTML = MODE_ICON[settings.mode];
-  $('mode-cap').textContent = MODE_TITLE[settings.mode];
+  syncQuick();
 }
-function flipTile(tile, change) {
-  if (reduceMotion) { change(); return; }
-  tile.classList.add('flip');
-  setTimeout(() => { change(); tile.classList.remove('flip'); }, 180);
+
+/* ---------- start screen: the big button, three dropdowns, "More options" and How to play ---------- */
+const DD_DESC = { 'mode-arcade': 'Three lanterns. Every 8 boats home starts a faster level.', 'mode-sprint': '60 seconds. Faster answers score more.', 'mode-practice': 'Calm water. No lanterns to lose, no game over.' };
+// the choices for one dropdown, read from its (hidden) radios; Newbie and Expert are note reading only
+function ddOptions(name) {
+  return [...$('settings').querySelectorAll(`input[name="${name}"]`)].filter(inp => !(isIvl() && inp.classList.contains('notes-only'))).map(inp => {
+    const lab = $('settings').querySelector(`label[for="${inp.id}"]`), b = lab.querySelector('b'), sp = lab.querySelector('span');
+    return { inp, title: (b || lab).textContent.trim(), desc: DD_DESC[inp.id] || (sp ? sp.textContent.trim() : '') };
+  });
 }
-$('game-tile').addEventListener('click', () => flipTile($('game-tile'), () => {
-  $('answer-' + (settings.answer === 'names' ? 'any' : 'names')).checked = true; drill = null; applySettings();
-}));
-$('clef-tile').addEventListener('click', () => flipTile($('clef-tile'), () => {
-  const next = CLEF_CYCLE[(CLEF_CYCLE.indexOf(settings.clef) + 1) % CLEF_CYCLE.length];
-  $('clef-' + next).checked = true; drill = null; applySettings();
-}));
-$('mode-tile').addEventListener('click', () => flipTile($('mode-tile'), () => {
-  const next = MODE_CYCLE[(MODE_CYCLE.indexOf(settings.mode) + 1) % MODE_CYCLE.length];
-  $('mode-' + next).checked = true; drill = null; applySettings();
-}));
-$('adv-btn').addEventListener('click', () => {
-  const open = $('advanced').hidden; $('advanced').hidden = !open;
-  $('adv-btn').setAttribute('aria-expanded', String(open));
-  try { localStorage.setItem('tidaltones:adv', open ? '1' : '0'); } catch {}
-});
+const ddPick = name => ddOptions(name).find(o => o.inp.checked);
+function setChoice(name, value) {
+  const inp = $('settings').querySelector(`input[name="${name}"][value="${value}"]`); if (!inp) return;
+  inp.checked = true; inp.dispatchEvent(new Event('change', { bubbles: true }));
+}
+function closeDD() { document.querySelectorAll('.dd-menu').forEach(m => m.remove()); document.querySelectorAll('.dd .sel').forEach(b => b.setAttribute('aria-expanded', 'false')); }
+function openDD(sel) {
+  const name = sel.closest('.dd').dataset.name, m = document.createElement('div');
+  m.className = 'dd-menu'; m.setAttribute('role', 'listbox'); m.setAttribute('aria-labelledby', 'dd-' + name);
+  m.innerHTML = ddOptions(name).map(o => `<button type="button" role="option" data-v="${o.inp.value}" aria-selected="${o.inp.checked}"><b>${esc(o.title)}</b>${o.desc ? `<small>${esc(o.desc)}</small>` : ''}</button>`).join('');
+  sel.after(m); sel.setAttribute('aria-expanded', 'true');
+  (m.querySelector('[aria-selected="true"]') || m.firstElementChild).focus();
+}
+function showMoreTab(t) {
+  document.querySelectorAll('.mtabs [data-tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
+  document.querySelectorAll('.mpanel').forEach(p => { p.hidden = p.dataset.panel !== t; });
+}
+function syncQuick() {
+  if (!$('quick').querySelector('.sel')) return;
+  const lv = currentLevel();
+  document.querySelectorAll('.dd').forEach(dd => { const o = ddPick(dd.dataset.name); dd.querySelector('.sel').textContent = o ? o.title : DIFF_TITLE[lv] || ''; });
+  // the summary on the sea: difficulty · game · mode, plus anything changed in More options
+  const bits = [GAME_TITLE[settings.game], MODE_TITLE2[settings.mode]];
+  if (settings.clef !== 'treble') bits.push(CLEF_SHORT[settings.clef] + (settings.clef === 'grand' ? '' : ' clef'));
+  if (!isIvl() && settings.answer !== 'names') bits.push(ANSWER_TITLE[settings.answer]);
+  if (settings.names === 'solfege') bits.push('Do Re Mi');
+  $('play-sum').innerHTML = `<b>${esc(DIFF_TITLE[lv])}</b> · ${bits.map(esc).join(' · ')}`;
+}
+function buildQuick() {
+  document.querySelectorAll('.dd').forEach(dd => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'sel';
+    b.id = 'sel-' + dd.dataset.name; b.setAttribute('aria-haspopup', 'listbox'); b.setAttribute('aria-expanded', 'false');
+    b.setAttribute('aria-labelledby', `dd-${dd.dataset.name} sel-${dd.dataset.name}`);
+    dd.append(b);
+  });
+  $('quick').addEventListener('click', e => {
+    const opt = e.target.closest('.dd-menu [role="option"]'), sel = e.target.closest('.dd .sel');
+    if (opt) { const dd = opt.closest('.dd'); closeDD(); setChoice(dd.dataset.name, opt.dataset.v); dd.querySelector('.sel').focus(); return; }
+    if (!sel) return;
+    const open = sel.getAttribute('aria-expanded') === 'true'; closeDD(); if (!open) openDD(sel);
+  });
+  $('quick').addEventListener('keydown', e => {
+    const sel = e.target.closest('.dd .sel');
+    if (sel && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); closeDD(); openDD(sel); return; }
+    const m = e.target.closest('.dd-menu'); if (!m) return;
+    const items = [...m.querySelectorAll('[role="option"]')], i = items.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus(); }
+    if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); items[e.key === 'Home' ? 0 : items.length - 1].focus(); }
+    if (e.key === 'Escape' || e.key === 'Tab') { if (e.key === 'Escape') e.preventDefault(); const s = m.parentNode.querySelector('.sel'); closeDD(); if (e.key === 'Escape') s.focus(); }
+  });
+  document.addEventListener('click', e => { if (!e.target.closest('.dd')) closeDD(); });
+  $('more-btn').addEventListener('click', () => { const open = $('more').hidden; $('more').hidden = !open; $('more-btn').setAttribute('aria-expanded', String(open)); });
+  document.querySelector('.mtabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) showMoreTab(b.dataset.tab); });
+  document.querySelector('.mtabs').addEventListener('keydown', e => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    const tabs = [...document.querySelectorAll('.mtabs [data-tab]:not([hidden])')], i = tabs.indexOf(document.activeElement); if (i < 0) return;
+    const t = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length]; t.focus(); showMoreTab(t.dataset.tab);
+  });
+  $('howto-btn').addEventListener('click', () => showHowTo(null));
+  syncQuick();
+}
+// How to play: shown before a player's very first game, and any time from the link
+const touchy = () => matchMedia('(pointer: coarse)').matches;
+function showHowTo(then) {
+  const tap = touchy() ? 'Tap' : 'Click';
+  const how = isIvl() ? `Name the distance between its two notes: ${tap.toLowerCase()} the pad${touchy() ? '' : ', or press <b style="white-space:nowrap">2–8</b>'}.`
+    : settings.answer !== 'names' ? `Name its note: ${tap.toLowerCase()} the matching key on the <b>piano</b>.`
+    : `Name its note: ${tap.toLowerCase()} the letter on the pad${touchy() ? '' : ', or type it (<b style="white-space:nowrap">A–G</b>)'}.`;
+  const last = settings.mode === 'sprint' ? 'You have <b>60 seconds</b>. Faster answers score more.'
+    : settings.mode === 'practice' ? '<b>Practice</b> is calm water: no lanterns to lose. Press <b>Esc</b> to stop.'
+    : 'Every <b>8 boats</b> home starts a faster level. A boat on the rocks puts out a lantern.';
+  const box = document.createElement('div'); box.className = 'howto-pop'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'howto-title');
+  box.innerHTML = `<div class="card"><h2 id="howto-title">How to play</h2><ol>
+    <li><i>1</i><span>Boats are sailing for the rocks. The lighthouse <b>beam</b> finds the next one.</span></li>
+    <li><i>2</i><span>${how}</span></li>
+    <li><i>3</i><span>${last}</span></li></ol>
+    <button class="btn big" type="button">${then ? 'Got it · light the lamp' : 'Got it'}</button></div>`;
+  document.body.append(box);
+  const key = e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); done(false); } else if (e.key === 'Enter' || e.code === 'Space') { e.preventDefault(); e.stopPropagation(); done(true); } };
+  const done = go => { box.remove(); store.set('tidaltones:howto', true); document.removeEventListener('keydown', key, true); if (go && then) then(); else $('start-btn').focus({ preventScroll: true }); };
+  document.addEventListener('keydown', key, true);
+  box.querySelector('button').addEventListener('click', () => done(true));
+  box.addEventListener('click', e => { if (e.target === box) done(false); });
+  setTimeout(() => box.querySelector('button').focus(), 30);
+}
+function playPressed() {
+  if (view() !== 'splash') return;
+  if (!store.get('tidaltones:howto', false)) { showHowTo(playPressed); return; }
+  launch();
+}
 
 /* ---------- settings ---------- */
 const KEYS = ['clef', 'answer', 'labels', 'filter', 'acc', 'mode', 'names', 'ivl'];
@@ -2380,7 +2417,7 @@ $('settings').addEventListener('change', e => {
 $('sound-btn').addEventListener('click', () => { settings.sound = !settings.sound; ensureAudio(); syncSound(); store.set('harborlights:settings', settings); });
 $('ov-btn').addEventListener('click', () => ovActions[0]?.());
 $('ov-btn2').addEventListener('click', () => ovActions[1]?.());
-$('start-btn').addEventListener('click', launch);
+$('start-btn').addEventListener('click', playPressed);
 $('res-again').addEventListener('click', startGame);
 $('res-home').addEventListener('click', toHarbor);
 $('res-board').addEventListener('click', () => openBoard(lastRun));
@@ -2765,7 +2802,7 @@ addEventListener('keydown', e => {
   if (view() === 'teacher') return;                              // the dashboard has its own fields; no game shortcuts there
   if (view() === 'board') { if (e.code === 'Escape') { e.preventDefault(); toHarbor(); } return; }
   if (view() === 'splash') {
-    if (e.code === 'Space' && !inForm && !(e.target.closest && e.target.closest('button'))) { e.preventDefault(); launch(); }
+    if (e.code === 'Space' && !inForm && !(e.target.closest && e.target.closest('button'))) { e.preventDefault(); playPressed(); }
     return;
   }
   const dg = e.code.match(/^Digit([2-8])$/);
@@ -2797,7 +2834,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && gam
 new ResizeObserver(() => { if (Math.abs(stage.clientWidth - W) > 1) resize(); }).observe(stage);
 
 function boot(data) {
-  try { if (localStorage.getItem('tidaltones:adv') === '1') { $('advanced').hidden = false; $('adv-btn').setAttribute('aria-expanded', 'true'); } } catch {}
+  buildQuick();
   document.body.dataset.view = 'splash';
   const saved = (data && data.settings) || store.get('harborlights:settings', null);
   loadSettings(saved);
