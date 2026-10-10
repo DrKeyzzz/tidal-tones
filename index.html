@@ -6,7 +6,16 @@
 <title>Tidal Tones</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Josefin+Sans:wght@400;600;700&family=Noto+Music&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Josefin+Sans:wght@400;600;700&family=Noto+Music&family=Outfit:wght@400;600;700;800&display=swap">
+<script>
+/* Look (skin), shared by every Music Theory Game: clean (default), day or classic. ?skin=day previews and saves one. */
+(function () {
+  var ok = ['clean', 'day', 'classic'], s = null;
+  try { var q = new URLSearchParams(location.search).get('skin'); if (ok.indexOf(q) >= 0) { s = q; localStorage.setItem('mtg_skin_v1', q); } } catch (e) {}
+  if (!s) try { s = localStorage.getItem('mtg_skin_v1'); } catch (e) {}
+  document.documentElement.dataset.skin = ok.indexOf(s) >= 0 ? s : 'clean';
+})();
+</script>
 <style>
 /* Layout: a harbor-master's chart table — logbook header, the sea as a wide canvas with the lighthouse at its left edge, a signal-flag answer pad, then the voyage settings. Single night-harbor look by choice. */
 :root {
@@ -22,6 +31,15 @@
   --f-display: "Abril Fatface", "Playfair Display", Didot, Georgia, serif;
   --f-ui: "Josefin Sans", "Futura", "Century Gothic", ui-sans-serif, system-ui, sans-serif;
   --f-music: "Noto Music", "Bravura Text", "Apple Symbols", serif;
+  --dw: 400;                                                    /* display font weight */
+  --gold: #ffd166; --silver: #d9e1e6; --bronze: #e0a36b;
+  --shadow: #000;
+  --stage-bg: linear-gradient(180deg, #13283a 0%, #0f2130 60%, #0b1822 100%);
+  --key-w: var(--moon); --key-w-line: #a9b8bf; --key-w-text: #3a4f5c; --key-w-hover: #fffaf0; --key-b: var(--deep); --key-b-hover: var(--tide-2);
+  /* canvas palette, read by the drawing code (readSkin) */
+  --cv-sea: #0a1720; --cv-wave: #9db3bf; --cv-hull: #c9d5d9; --cv-rock: #23323a; --cv-iron: #1b2a33;
+  --cv-stripe-a: #c4453a; --cv-stripe-b: #e9e2d2; --cv-light: #ffc45c; --cv-beam: 255,214,140; --cv-beam-op: lighter; --cv-beam-a: 1;
+  --cv-stars: 1; --cv-glow: 24; --cv-nb-line: #2c4b5e; --cv-nb-space: #183345;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -37,7 +55,7 @@ header.top .brand { margin-right: auto; }
 body[data-view="splash"] header.top { align-items: start; }
 .brand { display: flex; flex-direction: column; gap: 4px; }
 .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .24em; text-transform: uppercase; color: var(--lamp); }
-h1 { font-family: var(--f-display); font-weight: 400; font-size: clamp(32px, 5.5vw, 46px); line-height: .95; margin: 0; color: var(--moon); view-transition-name: hl-title; width: fit-content; }
+h1 { font-family: var(--f-display); font-weight: var(--dw); font-size: clamp(32px, 5.5vw, 46px); line-height: .95; margin: 0; color: var(--moon); view-transition-name: hl-title; width: fit-content; }
 body[data-view="splash"] h1 { font-size: clamp(54px, 11vw, 112px); line-height: .88; text-wrap: balance; }
 body[data-view="splash"] h1::after { content: ""; display: block; width: .9em; height: 4px; margin-top: .14em; background: var(--lamp); box-shadow: 0 0 18px var(--lamp); border-radius: 2px; }
 body[data-game="intervals"] .notes-only, body:not([data-game="intervals"]) .ivl-only, body:not([data-view="splash"]) .splash-only, body:not([data-view="game"]) .game-only, body:not([data-view="board"]) .board-only, body[data-view="board"] .stage, body:not([data-view="teacher"]) .teacher-only, body[data-view="teacher"] .stage, body[data-view="game"] #teacher-btn { display: none !important; }
@@ -47,7 +65,7 @@ body[data-game="intervals"] .notes-only, body:not([data-game="intervals"]) .ivl-
 .src { display: none !important; }                             /* the original radios stay as the source of truth; the dropdowns drive them */
 .play-cta { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; text-align: center; background: radial-gradient(60% 75% at 55% 50%, color-mix(in srgb, var(--deep) 30%, transparent), color-mix(in srgb, var(--deep) 78%, transparent)); }
 .stage:has(.overlay:not([hidden])) .play-cta { display: none; }
-.play-title { font-family: var(--f-display); font-weight: 400; font-size: clamp(24px, 4vw, 38px); line-height: 1; margin: 0; color: var(--moon); text-shadow: 0 2px 18px var(--deep); }
+.play-title { font-family: var(--f-display); font-weight: var(--dw); font-size: clamp(24px, 4vw, 38px); line-height: 1; margin: 0; color: var(--moon); text-shadow: 0 2px 18px var(--deep); }
 .play-title span { color: var(--lamp); }
 .btn.play-big { font-size: clamp(17px, 2.4vw, 22px); padding: 16px 38px 13px; display: inline-flex; align-items: center; gap: 12px; box-shadow: 0 0 0 4px color-mix(in srgb, var(--lamp) 22%, transparent), 0 0 44px -8px var(--lamp); animation: lampPulse 2.4s ease-in-out infinite; }
 .btn.play-big svg { width: .75em; height: .75em; margin-top: -2px; }
@@ -67,7 +85,7 @@ body[data-game="intervals"] .notes-only, body:not([data-game="intervals"]) .ivl-
 .dd .sel { width: 100%; text-align: left; font: 600 17px var(--f-ui); color: var(--moon); background: var(--deep); border: 1px solid var(--rope); border-radius: 12px; padding: 12px 36px 9px 14px; cursor: pointer; position: relative; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dd .sel::after { content: ""; position: absolute; right: 15px; top: 50%; width: 7px; height: 7px; border: solid var(--mist); border-width: 0 2px 2px 0; transform: translateY(-75%) rotate(45deg); }
 .dd .sel:hover, .dd .sel[aria-expanded="true"] { border-color: var(--lamp); }
-.dd-menu { position: absolute; z-index: 30; top: calc(100% + 6px); left: 0; min-width: 100%; width: max-content; max-width: min(340px, 92vw); background: var(--tide); border: 1px solid var(--lamp); border-radius: 14px; padding: 6px; box-shadow: 0 18px 40px -10px #000; display: flex; flex-direction: column; gap: 2px; }
+.dd-menu { position: absolute; z-index: 30; top: calc(100% + 6px); left: 0; min-width: 100%; width: max-content; max-width: min(340px, 92vw); background: var(--tide); border: 1px solid var(--lamp); border-radius: 14px; padding: 6px; box-shadow: 0 18px 40px -10px var(--shadow); display: flex; flex-direction: column; gap: 2px; }
 .dd-menu [role="option"] { cursor: pointer; padding: 9px 12px 7px; border-radius: 10px; display: flex; flex-direction: column; gap: 1px; text-align: left; font: inherit; color: var(--moon); background: none; border: 0; }
 .dd-menu [role="option"]:hover, .dd-menu [role="option"]:focus-visible { background: var(--tide-2); outline: none; box-shadow: inset 0 0 0 1px var(--rope); }
 .dd-menu b { font-size: 16px; font-weight: 700; }
@@ -88,7 +106,7 @@ body[data-game="intervals"] .notes-only, body:not([data-game="intervals"]) .ivl-
 .btn.big { font-size: 17px; padding: 17px 36px 14px; box-shadow: 0 0 34px -10px var(--lamp); }
 .howto-pop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, var(--deep) 80%, transparent); }
 .howto-pop .card { width: min(500px, 100%); box-shadow: 0 0 60px -20px var(--lamp); }
-.howto-pop h2 { font-family: var(--f-display); font-weight: 400; font-size: 32px; line-height: 1; margin: 0; }
+.howto-pop h2 { font-family: var(--f-display); font-weight: var(--dw); font-size: 32px; line-height: 1; margin: 0; }
 .howto-pop ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .howto-pop li { display: flex; gap: 12px; align-items: flex-start; font-size: 16px; }
 .howto-pop li > i { flex: none; font-style: normal; width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--lamp); color: var(--lamp); display: grid; place-items: center; font-size: 13px; font-weight: 700; padding-top: 2px; }
@@ -113,16 +131,16 @@ body[data-view="game"] #board-btn { display: none; }
 
 .board { display: flex; flex-direction: column; gap: 18px; }
 .board-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 10px; }
-.board-head h2 { font-family: var(--f-display); font-weight: 400; font-size: clamp(28px, 4.5vw, 40px); margin: 0; }
+.board-head h2 { font-family: var(--f-display); font-weight: var(--dw); font-size: clamp(28px, 4.5vw, 40px); margin: 0; }
 .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px 20px; }
 .filters .seg label { font-size: 13px; padding: 7px 10px 5px; }
 .board-summary { margin: 0; font-size: 15px; color: var(--mist); }
 .board-summary b { color: var(--moon); }
 .ranks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .ranks li { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto auto; align-items: center; gap: 4px 16px; padding: 12px 16px 10px; border: 1px solid var(--rope); border-radius: 12px; background: var(--deep); }
-.ranks .rank { font-family: var(--f-display); font-size: 26px; line-height: 1; color: var(--mist); text-align: center; }
-.ranks li.r1 .rank { color: #ffd166; } .ranks li.r2 .rank { color: #d9e1e6; } .ranks li.r3 .rank { color: #e0a36b; }
-.ranks li.r1 { border-color: color-mix(in srgb, #ffd166 60%, var(--rope)); background: color-mix(in srgb, #ffd166 8%, var(--deep)); }
+.ranks .rank { font-family: var(--f-display); font-weight: var(--dw); font-size: 26px; line-height: 1; color: var(--mist); text-align: center; }
+.ranks li.r1 .rank { color: var(--gold); } .ranks li.r2 .rank { color: var(--silver); } .ranks li.r3 .rank { color: var(--bronze); }
+.ranks li.r1 { border-color: color-mix(in srgb, var(--gold) 60%, var(--rope)); background: color-mix(in srgb, var(--gold) 8%, var(--deep)); }
 .ranks li.mine { box-shadow: inset 0 0 0 2px var(--safe); }
 .ranks .who { min-width: 0; }
 .ranks .who .nm { display: block; font-size: 19px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -217,10 +235,10 @@ body[data-view="game"] #board-btn { display: none; }
 .assign .a-d { flex: 1 1 260px; font-size: 15px; }
 .assign .a-d small { display: block; color: var(--mist); }
 
-.stage { position: relative; border: 1px solid var(--rope); border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #13283a 0%, #0f2130 60%, #0b1822 100%); }
+.stage { position: relative; border: 1px solid var(--rope); border-radius: 12px; overflow: hidden; background: var(--stage-bg); }
 canvas { display: block; width: 100%; }
 .overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 12px 16px; background: color-mix(in srgb, var(--deep) 84%, transparent); }
-.overlay h2 { font-family: var(--f-display); font-weight: 400; font-size: clamp(22px, 3.6vw, 32px); margin: 0; text-wrap: balance; }
+.overlay h2 { font-family: var(--f-display); font-weight: var(--dw); font-size: clamp(22px, 3.6vw, 32px); margin: 0; text-wrap: balance; }
 .overlay p { margin: 0; color: var(--mist); max-width: 48ch; text-wrap: balance; }
 .overlay .tag { font-size: 12px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--lamp); }
 
@@ -276,12 +294,12 @@ canvas { display: block; width: 100%; }
 .piano .bk.hit::after, .piano .bk.miss::after, .piano .bk.show::after { top: auto; bottom: 6px; right: 50%; transform: translateX(50%); color: var(--deep); }
 .piano-wrap { overflow-x: auto; overscroll-behavior-x: contain; border-radius: 10px; border: 1px solid var(--rope); scrollbar-width: thin; }
 .piano { position: relative; height: 160px; display: flex; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
-.piano .wk { flex: 1 1 0; min-width: 0; position: relative; background: var(--moon); border-right: 1px solid #a9b8bf; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 8px; font: 600 12px var(--f-ui); color: #3a4f5c; cursor: pointer; transition: background .12s; }
+.piano .wk { flex: 1 1 0; min-width: 0; position: relative; background: var(--key-w); border-right: 1px solid var(--key-w-line); display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 8px; font: 600 12px var(--f-ui); color: var(--key-w-text); cursor: pointer; transition: background .12s; }
 .piano .wk:last-child { border-right: 0; }
-.piano .wk:hover { background: #fffaf0; }
+.piano .wk:hover { background: var(--key-w-hover); }
 .piano .wk .mc { position: absolute; bottom: 28px; width: 7px; height: 7px; border-radius: 50%; background: var(--rope); }
-.piano .bk { position: absolute; top: 0; height: 60%; background: var(--deep); border: 1px solid var(--rope); border-top: 0; border-radius: 0 0 5px 5px; cursor: pointer; z-index: 2; transition: background .12s; }
-.piano .bk:hover { background: var(--tide-2); }
+.piano .bk { position: absolute; top: 0; height: 60%; background: var(--key-b); border: 1px solid var(--rope); border-top: 0; border-radius: 0 0 5px 5px; cursor: pointer; z-index: 2; transition: background .12s; }
+.piano .bk:hover { background: var(--key-b-hover); }
 .piano .hit { background: var(--lamp) !important; }
 .piano .miss { background: var(--flare) !important; }
 .piano .show { background: var(--safe) !important; }
@@ -292,7 +310,7 @@ canvas { display: block; width: 100%; }
 kbd { font: 700 11px var(--f-ui); border: 1px solid var(--rope); border-bottom-width: 2px; border-radius: 4px; padding: 2px 5px 0; color: var(--moon); }
 
 .card { background: var(--tide); border: 1px solid var(--rope); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
-.card h3 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 21px; }
+.card h3 { margin: 0; font-family: var(--f-display); font-weight: var(--dw); font-size: 21px; }
 .card-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; }
 .card-head .note { color: var(--mist); font-size: 13px; }
 
@@ -318,9 +336,9 @@ legend { font-size: 12px; font-weight: 700; letter-spacing: .18em; text-transfor
 .row { display: flex; flex-wrap: wrap; gap: 8px; }
 /* welcome + who's playing (shared with the Rhythm Trainer and Scale Quest) */
 .iconbtn.who { color: var(--lamp); border-color: color-mix(in srgb, var(--lamp) 50%, var(--rope)); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.welcome { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; overflow: auto; background: radial-gradient(ellipse at 20% 10%, #183345 0%, var(--deep) 60%), var(--deep); }
+.welcome { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; overflow: auto; background: radial-gradient(ellipse at 20% 10%, var(--tide-2) 0%, var(--deep) 60%), var(--deep); }
 .wcard { width: min(480px, 100%); display: flex; flex-direction: column; gap: 14px; padding: 26px 24px; background: var(--tide); border: 1px solid var(--rope); border-radius: 16px; box-shadow: 0 0 60px -20px var(--lamp); }
-.wcard h2 { font-family: var(--f-display); font-weight: 400; font-size: 40px; line-height: .95; margin: 0; }
+.wcard h2 { font-family: var(--f-display); font-weight: var(--dw); font-size: 40px; line-height: .95; margin: 0; }
 .wcard .eyebrow { margin-bottom: -6px; }
 .wcard label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--lamp); }
 .wcard input[type="text"] { font: 600 17px var(--f-ui); color: var(--moon); background: var(--deep); border: 1px solid var(--rope); border-radius: 10px; padding: 12px 12px 10px; width: 100%; }
@@ -347,6 +365,59 @@ legend { font-size: 12px; font-weight: 700; letter-spacing: .18em; text-transfor
   .keys button { height: 56px; font-size: 22px; }
   .hud .v { font-size: 20px; }
 }
+
+/* ---------- Look: three skins on one layout (Clean is the default; Classic is the :root values above) ---------- */
+html[data-skin="clean"] {
+  --deep: #0e1a28; --tide: #15253a; --tide-2: #1c2f48; --rope: #2d4562;
+  --moon: #f1f5f9; --mist: #a9b8c9; --lamp: #ffcc66; --flare: #ff7b6e; --safe: #5cd6bb;
+  --f-display: "Outfit", ui-sans-serif, system-ui, sans-serif; --f-ui: "Outfit", ui-sans-serif, system-ui, sans-serif; --dw: 800;
+  --shadow: rgba(0,0,0,.55);
+  --stage-bg: linear-gradient(180deg, #172c45 0%, #12233a 60%, #0e1c2e 100%);
+  --key-w: #f1f5f9; --key-w-line: #b4c2d0; --key-w-text: #334a60; --key-w-hover: #ffffff;
+  --cv-sea: #0c1b2c; --cv-wave: #8fa6bd; --cv-hull: #d3dde7; --cv-rock: #26384b; --cv-iron: #1c2b3c;
+  --cv-stripe-a: #e0605a; --cv-stripe-b: #eef2f6; --cv-light: #ffd27a; --cv-beam: 255,220,150; --cv-beam-op: lighter;
+  --cv-stars: .7; --cv-glow: 0; --cv-nb-line: #2d4562; --cv-nb-space: #1c2f48;
+}
+html[data-skin="day"] {
+  --deep: #f2f8fc; --tide: #ffffff; --tide-2: #e4eff7; --rope: #c3d5e3;
+  --moon: #13314a; --mist: #4b687e; --lamp: #c2410c; --flare: #c8261b; --safe: #0b7a62;
+  --f-display: "Outfit", ui-sans-serif, system-ui, sans-serif; --f-ui: "Outfit", ui-sans-serif, system-ui, sans-serif; --dw: 800;
+  --gold: #a16207; --silver: #5b6b7a; --bronze: #a0521c;
+  --shadow: rgba(19,49,74,.28);
+  --stage-bg: linear-gradient(180deg, #a9dbf5 0%, #d5eefb 40%, #f4fbff 72%);
+  --key-w: #ffffff; --key-w-line: #b9c9d6; --key-w-text: #3a4f5c; --key-w-hover: #fff6ea; --key-b: #1d3347; --key-b-hover: #2e4b65;
+  --cv-sea: #3d9fd0; --cv-wave: #ffffff; --cv-hull: #ffffff; --cv-rock: #5e6e78; --cv-iron: #2b3a46;
+  --cv-stripe-a: #d63d33; --cv-stripe-b: #ffffff; --cv-light: #ffc93c; --cv-beam: 255,196,60; --cv-beam-op: source-over; --cv-beam-a: .5;
+  --cv-stars: 0; --cv-glow: 0; --cv-nb-line: #dce9f3; --cv-nb-space: #fff0e2;
+  color-scheme: light;
+}
+/* flat skins: soft shadows instead of the lamp glow */
+html:is([data-skin="clean"], [data-skin="day"]) h1 { letter-spacing: -.01em; }
+html:is([data-skin="clean"], [data-skin="day"]) body[data-view="splash"] h1::after { box-shadow: none; }
+html:is([data-skin="clean"], [data-skin="day"]) .btn:hover { box-shadow: 0 6px 18px -8px var(--shadow); }
+html:is([data-skin="clean"], [data-skin="day"]) .btn.big { box-shadow: 0 8px 22px -10px var(--shadow); }
+html:is([data-skin="clean"], [data-skin="day"]) .btn.play-big { box-shadow: 0 10px 26px -12px var(--shadow), 0 0 0 4px color-mix(in srgb, var(--lamp) 24%, transparent); animation-name: ringPulse; }
+@keyframes ringPulse { 50% { box-shadow: 0 10px 26px -12px var(--shadow), 0 0 0 9px color-mix(in srgb, var(--lamp) 12%, transparent); } }
+html:is([data-skin="clean"], [data-skin="day"]) :is(.howto-pop .card, .wcard) { box-shadow: 0 24px 60px -24px var(--shadow); }
+html:is([data-skin="clean"], [data-skin="day"]) :is(.lanterns i, .lanterns i.dim, #midi-btn[data-state="ready"] i, .dot.on) { box-shadow: none; }
+html[data-skin="day"] .play-title { text-shadow: 0 1px 12px var(--deep); }
+html[data-skin="day"] .card { box-shadow: 0 10px 30px -22px var(--shadow); }
+/* the shared sign-in icon picker draws white-on-dark; give it ink on the light skin */
+html[data-skin="day"] .icon-pick button { background: rgba(19,49,74,.04); border-color: rgba(19,49,74,.2); }
+html[data-skin="day"] .icon-pick button:hover { border-color: rgba(19,49,74,.5); }
+html[data-skin="day"] .icon-pick button[aria-pressed="true"] { border-color: var(--lamp); background: color-mix(in srgb, var(--lamp) 14%, transparent); box-shadow: none; }
+html[data-skin="day"] .icon-pick button .ic-svg { color: var(--moon); }
+/* the Look tab: one swatch button per skin, each with a tiny harbor in its own colors */
+.skin-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.skin-pick button { display: flex; flex-direction: column; gap: 6px; align-items: stretch; text-align: left; padding: 8px 8px 9px; border: 1px solid var(--rope); border-radius: 12px; background: var(--deep); color: var(--moon); font: 600 15px var(--f-ui); cursor: pointer; }
+.skin-pick button:hover { border-color: var(--mist); }
+.skin-pick button[aria-pressed="true"] { border-color: var(--lamp); box-shadow: inset 0 0 0 1px var(--lamp); }
+.skin-pick button[aria-pressed="true"] b::before { content: "✓ "; color: var(--lamp); }
+.skin-pick small { font-size: 12px; font-weight: 400; color: var(--mist); line-height: 1.25; }
+.skin-pick .sw { position: relative; height: 46px; border-radius: 8px; overflow: hidden; background: linear-gradient(var(--a) 0 66%, var(--s) 66%); border: 1px solid color-mix(in srgb, var(--c) 25%, transparent); }
+.skin-pick .sw::before { content: ""; position: absolute; left: 0; right: 0; top: 30%; height: 1px; background: var(--c); opacity: .6; box-shadow: 0 6px 0 var(--c); }
+.skin-pick .sw::after { content: ""; position: absolute; left: 56%; top: 30%; width: 12px; height: 9px; border-radius: 50%; background: var(--c); transform: rotate(-20deg); box-shadow: -34px -8px 0 -2px var(--b); }
+@media (max-width: 560px) { .skin-pick { gap: 6px; } .skin-pick small { display: none; } }
 </style>
 <style>
 /* Music Theory Games home link: the same in every game, on its own row at the top left of the header */
@@ -444,6 +515,7 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
         <button type="button" role="tab" data-tab="staff" id="tab-staff" aria-controls="panel-staff" aria-selected="true">Staff</button>
         <button type="button" role="tab" data-tab="answers" id="tab-answers" aria-controls="panel-answers" aria-selected="false">Answers</button>
         <button type="button" role="tab" data-tab="keys" id="tab-keys" aria-controls="panel-keys" aria-selected="false">Keys &amp; intervals</button>
+        <button type="button" role="tab" data-tab="look" id="tab-look" aria-controls="panel-look" aria-selected="false">Look</button>
       </div>
       <div class="mpanel" data-panel="staff" id="panel-staff" role="tabpanel" aria-labelledby="tab-staff">
         <fieldset>
@@ -521,6 +593,16 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
           </div>
           <div class="keychips" id="keychips"></div>
           <p class="muted small" id="key-count" style="margin-top:8px"></p>
+        </fieldset>
+      </div>
+      <div class="mpanel" data-panel="look" id="panel-look" role="tabpanel" aria-labelledby="tab-look" hidden>
+        <fieldset class="wide">
+          <legend>Look</legend>
+          <div class="skin-pick" id="skin-pick">
+            <button type="button" data-look="clean" aria-pressed="false"><span class="sw" aria-hidden="true" style="--a:#172c45;--s:#0c1b2c;--b:#ffcc66;--c:#f1f5f9"></span><b>Clean</b><small>Calm night harbor</small></button>
+            <button type="button" data-look="day" aria-pressed="false"><span class="sw" aria-hidden="true" style="--a:#d5eefb;--s:#3d9fd0;--b:#c2410c;--c:#13314a"></span><b>Day</b><small>Sunny and bright</small></button>
+            <button type="button" data-look="classic" aria-pressed="false"><span class="sw" aria-hidden="true" style="--a:#13283a;--s:#0a1720;--b:#ffc45c;--c:#eee8da"></span><b>Classic</b><small>The first lamp-lit look</small></button>
+          </div>
         </fieldset>
       </div>
     </div>
@@ -700,8 +782,23 @@ const MODE_DESC = {
 };
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const C = { moon: css('--moon'), lamp: css('--lamp'), flare: css('--flare'), safe: css('--safe'), mist: css('--mist'), rope: css('--rope'), deep: css('--deep') };
-const F = { music: css('--f-music'), ui: css('--f-ui'), display: css('--f-display') };
+const C = {}, F = {};
+// the canvas palette comes from the skin's CSS variables; read again whenever the Look changes
+function readSkin() {
+  for (const k of ['moon', 'lamp', 'flare', 'safe', 'mist', 'rope', 'deep']) C[k] = css('--' + k);
+  for (const k of ['sea', 'wave', 'hull', 'rock', 'iron', 'stripe-a', 'stripe-b', 'light', 'beam', 'beam-op', 'nb-line', 'nb-space']) C[k] = css('--cv-' + k);
+  C.stars = +css('--cv-stars'); C.glow = +css('--cv-glow'); C.beamA = +css('--cv-beam-a') || 1;
+  Object.assign(F, { music: css('--f-music'), ui: css('--f-ui'), display: css('--f-display'), dw: css('--dw') });
+}
+readSkin();
+const SKINS = ['clean', 'day', 'classic'];
+function setSkin(s) {
+  if (!SKINS.includes(s)) s = 'clean';
+  document.documentElement.dataset.skin = s;
+  try { localStorage.setItem('mtg_skin_v1', s); } catch {}
+  readSkin();
+  document.querySelectorAll('#skin-pick [data-look]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.look === s)));
+}
 
 const DEFAULT_RANGE = () => ({ treble: [0, 8], bass: [0, 8], alto: [0, 8] });
 const settings = { newbie: false, clef: 'treble', range: DEFAULT_RANGE(), answer: 'names', labels: 'c', game: 'notes', ivl: 'easy', keys: ['C', 'G', 'F'], expert: false, filter: 'all', acc: 'off', mode: 'arcade', names: 'letters', sound: true };
@@ -1793,7 +1890,7 @@ function draw() {
   ctx.save();
   ctx.clearRect(0, 0, W, H);
   if (shake > 0) ctx.translate((Math.random() - .5) * g * .5, (Math.random() - .5) * g * .4);
-  for (const s of stars) { ctx.globalAlpha = .25 + .25 * Math.sin(clock * 1.2 + s.tw); ctx.fillStyle = C.moon; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill(); }
+  if (C.stars) for (const s of stars) { ctx.globalAlpha = (.25 + .25 * Math.sin(clock * 1.2 + s.tw)) * C.stars; ctx.fillStyle = C.moon; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill(); }
   ctx.globalAlpha = 1;
   drawBeam();
   drawSea();
@@ -1831,9 +1928,9 @@ function draw() {
     const top = yOf(staves()[0], 8), cx = (reefX() + W) / 2, cy = top - 2.85 * g;
     ctx.globalAlpha = Math.min(1, banner.life / (banner.fade || .45), pop * 1.5);
     ctx.save(); ctx.translate(cx, cy); ctx.scale(scale, scale);
-    ctx.font = `${Math.min(g * 2.3, W / 9)}px ${F.display}`;
+    ctx.font = `${F.dw} ${Math.min(g * 2.3, W / 9)}px ${F.display}`;
     ctx.lineWidth = 8; ctx.lineJoin = 'round'; ctx.strokeStyle = C.deep; ctx.strokeText(banner.text, 0, 0);
-    ctx.shadowColor = C.lamp; ctx.shadowBlur = 24; ctx.fillStyle = C.lamp; ctx.fillText(banner.text, 0, 0); ctx.shadowBlur = 0;
+    ctx.shadowColor = C.lamp; ctx.shadowBlur = C.glow; ctx.fillStyle = C.lamp; ctx.fillText(banner.text, 0, 0); ctx.shadowBlur = 0;
     ctx.font = `600 ${g * .85}px ${F.ui}`; ctx.lineWidth = 4; ctx.strokeText(banner.sub.toUpperCase(), 0, g * 1.75);
     ctx.fillStyle = C.moon; ctx.fillText(banner.sub.toUpperCase(), 0, g * 1.75);
     ctx.restore();
@@ -1848,12 +1945,12 @@ function drawBeam() {
   const far = 1.25;                                              // carry the beam a little past its target
   const ex = L.x + dx * far, ey = L.y + dy * far;
   const grd = ctx.createLinearGradient(L.x, L.y, ex, ey);
-  const a = game.running ? .2 + beam.glow * .35 : .13;
-  grd.addColorStop(0, `rgba(255,214,140,${a + .15})`);
-  grd.addColorStop(.8, `rgba(255,214,140,${a * .6})`);
-  grd.addColorStop(1, 'rgba(255,214,140,0)');
+  const a = (game.running ? .2 + beam.glow * .35 : .13) * C.beamA;
+  grd.addColorStop(0, `rgba(${C.beam},${a + .15})`);
+  grd.addColorStop(.8, `rgba(${C.beam},${a * .6})`);
+  grd.addColorStop(1, `rgba(${C.beam},0)`);
   ctx.save();
-  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalCompositeOperation = C['beam-op'];
   ctx.fillStyle = grd;
   ctx.beginPath(); ctx.moveTo(L.x, L.y);
   ctx.lineTo(ex + nx * spread * far, ey + ny * spread * far);
@@ -1864,8 +1961,8 @@ function drawBeam() {
 
 function drawSea() {
   const sy = seaY();
-  ctx.fillStyle = '#0a1720'; ctx.fillRect(0, sy, W, H - sy);
-  ctx.strokeStyle = C.mist; ctx.lineWidth = 1;
+  ctx.fillStyle = C.sea; ctx.fillRect(0, sy, W, H - sy);
+  ctx.strokeStyle = C.wave; ctx.lineWidth = 1;
   for (let row = 0; row < 3; row++) {
     ctx.globalAlpha = .28 - row * .07;
     const y0 = sy + row * .6 * g, amp = .12 * g, ph = clock * (1.2 - row * .3) + row;
@@ -1878,13 +1975,13 @@ function drawSea() {
 
 function drawHull(n, x, home) {
   const hy = seaY() + .15 * g + Math.sin(clock * 2 + n.bob) * .12 * g;
-  ctx.fillStyle = home ? C.lamp : '#c9d5d9';
+  ctx.fillStyle = home ? C.lamp : C.hull;
   ctx.beginPath(); ctx.moveTo(x - 1.1 * g, hy - .25 * g); ctx.lineTo(x + 1.1 * g, hy - .25 * g); ctx.lineTo(x + .75 * g, hy + .25 * g); ctx.lineTo(x - .75 * g, hy + .25 * g); ctx.closePath(); ctx.fill();
   ctx.beginPath();
   if (n.sail) { ctx.moveTo(x - .05 * g, hy - .35 * g); ctx.lineTo(x - .05 * g, hy - 1.35 * g); ctx.lineTo(x + .8 * g, hy - .35 * g); }
   else { ctx.rect(x - .5 * g, hy - .75 * g, .9 * g, .45 * g); }
   ctx.fill();
-  ctx.fillStyle = C.lamp; ctx.beginPath(); ctx.arc(x - .7 * g, hy - .45 * g, .12 * g, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = C.light; ctx.beginPath(); ctx.arc(x - .7 * g, hy - .45 * g, .12 * g, 0, Math.PI * 2); ctx.fill();
 }
 function wholeNote(x, y, col) {
   const rx = g * .36, ry = g * .22, rot = -1.05;
@@ -1935,7 +2032,7 @@ function drawNewbieLabels(st) {
     const k = st + ':' + p, line = p % 2 === 0, x = line ? nbLineX() : nbSpaceX(), y = yOf(st, p);
     const flash = nbFlash[k] > 0, learned = (nbStreak[k] || 0) >= 3;
     ctx.globalAlpha = flash ? 1 : learned ? .22 : .95;
-    ctx.fillStyle = flash ? C.flare : line ? '#2c4b5e' : '#183345';
+    ctx.fillStyle = flash ? C.flare : line ? C['nb-line'] : C['nb-space'];
     ctx.beginPath(); ctx.roundRect(x - .58 * g, y - .48 * g, 1.16 * g, .96 * g, .22 * g); ctx.fill();
     ctx.fillStyle = flash ? C.deep : line ? C.moon : C.lamp;
     ctx.font = `700 ${.78 * g}px ${F.ui}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -1977,13 +2074,13 @@ function drawBoat(n, x, col, home) {
   if (home) { ctx.globalAlpha = 1 - home; ctx.translate(-home * home * 2 * g, home * home * 2.5 * g); }
   // hull
   const hy = seaY() + .15 * g + Math.sin(clock * 2 + n.bob) * .12 * g;
-  ctx.fillStyle = home ? C.lamp : '#c9d5d9';
+  ctx.fillStyle = home ? C.lamp : C.hull;
   ctx.beginPath(); ctx.moveTo(x - 1.1 * g, hy - .25 * g); ctx.lineTo(x + 1.1 * g, hy - .25 * g); ctx.lineTo(x + .75 * g, hy + .25 * g); ctx.lineTo(x - .75 * g, hy + .25 * g); ctx.closePath(); ctx.fill();
   ctx.beginPath();
   if (n.sail) { ctx.moveTo(x - .05 * g, hy - .35 * g); ctx.lineTo(x - .05 * g, hy - 1.35 * g); ctx.lineTo(x + .8 * g, hy - .35 * g); }
   else { ctx.rect(x - .5 * g, hy - .75 * g, .9 * g, .45 * g); }
   ctx.fill();
-  ctx.fillStyle = C.lamp; ctx.beginPath(); ctx.arc(x - .7 * g, hy - .45 * g, .12 * g, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = C.light; ctx.beginPath(); ctx.arc(x - .7 * g, hy - .45 * g, .12 * g, 0, Math.PI * 2); ctx.fill();
   // note
   ctx.strokeStyle = C.moon; ctx.lineWidth = Math.max(1, g * .08);
   for (let lp = -2; lp >= n.p; lp -= 2) { const ly = yOf(n.staff, lp); ctx.beginPath(); ctx.moveTo(x - 1.1 * g, ly); ctx.lineTo(x + 1.1 * g, ly); ctx.stroke(); }
@@ -2009,7 +2106,7 @@ function drawReef() {
   // faint danger line up through the staff
   ctx.save(); ctx.setLineDash([g * .25, g * .45]); ctx.strokeStyle = C.flare; ctx.globalAlpha = .35; ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.moveTo(rx, .6 * g); ctx.lineTo(rx, sy); ctx.stroke(); ctx.restore();
-  ctx.fillStyle = '#23323a';
+  ctx.fillStyle = C.rock;
   const rocks = [[-1.1, .9, .7], [0, 1.3, .9], [1, .8, .6]];
   for (const [ox, h, w] of rocks) {
     ctx.beginPath(); ctx.moveTo(rx + (ox - w) * g, sy + .5 * g); ctx.lineTo(rx + (ox - w * .3) * g, sy - h * g); ctx.lineTo(rx + (ox + w * .4) * g, sy - h * .7 * g); ctx.lineTo(rx + (ox + w) * g, sy + .5 * g); ctx.closePath(); ctx.fill();
@@ -2020,23 +2117,23 @@ function drawLighthouse() {
   const L = lampPos(), base = seaY() + .3 * g;
   const topW = 1.0 * g, botW = 1.7 * g, top = L.y + .9 * g;
   // rocks under the tower
-  ctx.fillStyle = '#23323a';
+  ctx.fillStyle = C.rock;
   ctx.beginPath(); ctx.moveTo(0, H); ctx.lineTo(0, base - .4 * g); ctx.lineTo(.8 * g, base - .9 * g); ctx.lineTo(2.4 * g, base - .6 * g); ctx.lineTo(3.2 * g, base + .2 * g); ctx.lineTo(3.2 * g, H); ctx.closePath(); ctx.fill();
   // striped tower
   const bands = 5, h = base - .6 * g - top;
   for (let i = 0; i < bands; i++) {
     const y0 = top + h * i / bands, y1 = top + h * (i + 1) / bands;
     const w0 = topW + (botW - topW) * i / bands, w1 = topW + (botW - topW) * (i + 1) / bands;
-    ctx.fillStyle = i % 2 ? '#e9e2d2' : '#c4453a';
+    ctx.fillStyle = i % 2 ? C['stripe-b'] : C['stripe-a'];
     ctx.beginPath(); ctx.moveTo(L.x - w0 / 2, y0); ctx.lineTo(L.x + w0 / 2, y0); ctx.lineTo(L.x + w1 / 2, y1); ctx.lineTo(L.x - w1 / 2, y1); ctx.closePath(); ctx.fill();
   }
   // gallery, lantern room, roof
-  ctx.fillStyle = '#1b2a33'; ctx.fillRect(L.x - .8 * g, top - .2 * g, 1.6 * g, .25 * g);
+  ctx.fillStyle = C.iron; ctx.fillRect(L.x - .8 * g, top - .2 * g, 1.6 * g, .25 * g);
   const lit = game.running && settings.mode === 'arcade' ? .35 + .65 * game.lamps / 6 : 1;
   ctx.globalAlpha = lampFlicker > 0 && !reduceMotion ? lit * (.4 + .6 * Math.abs(Math.sin(lampFlicker * 30))) : lit;
-  ctx.fillStyle = C.lamp; ctx.shadowColor = C.lamp; ctx.shadowBlur = (18 + beam.glow * 20) * lit;
+  ctx.fillStyle = C.light; ctx.shadowColor = C.light; ctx.shadowBlur = (18 + beam.glow * 20) * lit;
   ctx.fillRect(L.x - .4 * g, L.y - .35 * g, .8 * g, .75 * g); ctx.shadowBlur = 0; ctx.globalAlpha = 1;
-  ctx.fillStyle = '#1b2a33';
+  ctx.fillStyle = C.iron;
   ctx.beginPath(); ctx.moveTo(L.x - .6 * g, L.y - .35 * g); ctx.lineTo(L.x, L.y - 1 * g); ctx.lineTo(L.x + .6 * g, L.y - .35 * g); ctx.closePath(); ctx.fill();
 }
 
@@ -2393,6 +2490,8 @@ function buildQuick() {
     const t = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length]; t.focus(); showMoreTab(t.dataset.tab);
   });
   $('howto-btn').addEventListener('click', () => showHowTo(null));
+  $('skin-pick').addEventListener('click', e => { const b = e.target.closest('[data-look]'); if (b) setSkin(b.dataset.look); });
+  setSkin(document.documentElement.dataset.skin);
   syncQuick();
 }
 // How to play: shown before a player's very first game, and any time from the link
