@@ -58,7 +58,7 @@ body[data-game="intervals"] .notes-only, body:not([data-game="intervals"]) .ivl-
 .play-hint { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 8px; font-size: 13px; color: var(--mist); }
 .play-hint .best-note { flex-basis: 100%; font-variant-numeric: tabular-nums; }
 .play-hint .best-note b { color: var(--lamp); }
-@media (hover: none) and (pointer: coarse) { .play-hint .kbd-hint { display: none; } }     /* phones and tablets: no space bar to press */
+@media (hover: none) and (pointer: coarse) { .kbd-hint, .ov-keys { display: none; } }     /* phones and tablets: no keyboard to press */
 .linkish { font: 600 13px var(--f-ui); color: var(--lamp); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 10px 12px; align-items: end; }
 @media (max-width: 760px) { .quick { grid-template-columns: repeat(2, minmax(0, 1fr)); } .quick .more-btn { grid-column: 2; } .quick .dd:nth-of-type(2) .dd-menu { left: auto; right: 0; } }
@@ -269,6 +269,11 @@ canvas { display: block; width: 100%; }
 .keys button:hover { background: var(--tide-2); }
 .keys button.hit { border-color: var(--lamp); color: var(--lamp); background: color-mix(in srgb, var(--lamp) 12%, var(--tide)); }
 .keys button.miss { border-color: var(--flare); color: var(--flare); }
+.keys button.hit::after, .keys button.miss::after, .piano .hit::after, .piano .miss::after, .piano .show::after { position: absolute; top: 3px; right: 5px; font: 700 13px var(--f-ui); line-height: 1; pointer-events: none; }
+.keys button.hit::after, .piano .hit::after, .piano .show::after { content: "✓"; }
+.keys button.miss::after, .piano .miss::after { content: "✗"; }
+.piano .wk.hit::after, .piano .wk.miss::after, .piano .wk.show::after { top: auto; bottom: 26px; right: auto; color: var(--deep); }
+.piano .bk.hit::after, .piano .bk.miss::after, .piano .bk.show::after { top: auto; bottom: 6px; right: 50%; transform: translateX(50%); color: var(--deep); }
 .piano-wrap { overflow-x: auto; overscroll-behavior-x: contain; border-radius: 10px; border: 1px solid var(--rope); scrollbar-width: thin; }
 .piano { position: relative; height: 160px; display: flex; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
 .piano .wk { flex: 1 1 0; min-width: 0; position: relative; background: var(--moon); border-right: 1px solid #a9b8bf; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 8px; font: 600 12px var(--f-ui); color: #3a4f5c; cursor: pointer; transition: background .12s; }
@@ -308,6 +313,7 @@ legend { font-size: 12px; font-weight: 700; letter-spacing: .18em; text-transfor
 .trouble { display: flex; flex-wrap: wrap; gap: 6px; }
 .trouble span { font-weight: 600; font-size: 15px; border: 1px solid color-mix(in srgb, var(--flare) 55%, var(--rope)); border-radius: 999px; padding: 6px 12px 4px; }
 .trouble span em { font-style: normal; color: var(--flare); font-size: 13px; margin-left: 6px; }
+.trouble span em::before { content: "✗ "; }
 .trouble .staffname { color: var(--mist); font-weight: 400; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; }
 /* welcome + who's playing (shared with the Rhythm Trainer and Scale Quest) */
@@ -358,7 +364,7 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
   <header class="top">
     <div class="mtg-home"><a href="https://drkeyzzz.github.io/" title="All the Music Theory Games"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11 12 3l9 8"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/></svg>Music Theory Games</a><a href="https://drkeyzzz.github.io/report/" title="See your report: what you're doing well and what to practice next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>My Report</a></div>
     <div class="brand">
-      <div class="eyebrow">A note-reading game</div>
+      <div class="eyebrow"><span class="notes-only">A note-reading game</span><span class="ivl-only">An interval game</span></div>
       <h1 id="title">Tidal Tones</h1>
     </div>
     <div class="hud game-only">
@@ -646,7 +652,7 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
     <p class="werr" id="w-error" role="alert"></p>
     <button class="btn big" id="w-go" type="submit">Set sail</button>
     <button class="btn ghost" id="w-guest" type="button">Play as guest</button>
-    <p class="wnote">Guests' scores aren't saved. One sign-in works for the Rhythm Trainer, Scale Quest and Tidal Tones.</p>
+    <p class="wnote">Guests' scores aren't saved. One sign-in works for every game on Music Theory Games.</p>
   </form>
 </div>
 
@@ -921,7 +927,7 @@ function startGame() {
   nbStreak = {}; nbFlash = {};
   ensureAudio();
   Object.assign(game, { running: true, paused: false, over: false, score: 0, level: 1, hits: 0, wrong: 0, lost: 0, streak: 0, bestStreak: 0, lamps: 6, time: 60, elapsed: 0, lock: 0, stats: {} });
-  notes = []; homeward = []; floaters = []; particles = []; spawnT = .5; lastPick = null;
+  notes = []; homeward = []; floaters = []; particles = []; rightMarks = []; spawnT = .5; lastPick = null;
   $('overlay').hidden = true; $('results').hidden = true;
   syncPad(); hud();
   game.keyBag = null; game.key = pickKey(); game.keyPending = false; game.pendingSplash = null; game.sinceKey = 0; lastIvl = null; game.keyOn = false; game.hold = 0;
@@ -1500,7 +1506,7 @@ function launch() {
 }
 function toHarbor() {
   game.running = false; game.paused = false; game.over = false;
-  notes = []; homeward = []; floaters = []; particles = []; banner = null; spawnT = .6;
+  notes = []; homeward = []; floaters = []; particles = []; rightMarks = []; banner = null; spawnT = .6;
   $('overlay').hidden = true; $('results').hidden = true; drill = null; drillIvls = null;
   goTo('splash', () => { hud(); showBest(); syncSimple(); });
 }
@@ -1549,11 +1555,27 @@ function applyPendingKey() {
 const SPLASH = 1.8;
 function levelSplash(L, sub) { banner = { text: 'LEVEL ' + L, sub: sub || (L > 1 ? 'Faster boats ahead' : 'Keep the lamp lit'), life: SPLASH }; beam.glow = 1; }
 
+// the right line or space (both notes for an interval) glows across the staff for a moment after a miss
+let rightMarks = [];
+function showRight(n, life) {
+  const ps = n.kind === 'ivl' ? [n.p, n.p2] : [n.p];
+  rightMarks = ps.map(p => ({ staff: n.staff, p, life, max: life }));
+}
+function drawRightMarks() {
+  for (const m of rightMarks) {
+    const y = yOf(m.staff, m.p), line = ((m.p % 2) + 2) % 2 === 0, h = line ? .36 * g : .78 * g;
+    ctx.globalAlpha = (line ? .75 : .5) * Math.min(1, m.life / m.max * 2.5);
+    ctx.fillStyle = C.safe;
+    ctx.beginPath(); ctx.roundRect(reefX(), y - h / 2, W - reefX(), h, h / 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
 function guideHome(n, withSound) {
   const x = noteX(n), y = yOf(n.staff, n.p);
   homeward.push({ n, x, t: 0 });
   beam.x = x; beam.y = y; beam.glow = 1;
-  floaters.push({ x, y: (n.kind === 'ivl' ? yOf(n.staff, n.p2) : y) - 1.8 * g, text: labelOf(n), color: C.lamp, life: 1.3, max: 1.3 });
+  floaters.push({ x, y: (n.kind === 'ivl' ? yOf(n.staff, n.p2) : y) - 1.8 * g, text: (withSound ? '✓ ' : '') + labelOf(n), color: C.lamp, life: 1.3, max: 1.3 });
   for (let i = 0; i < (reduceMotion ? 5 : 12); i++) {
     const a = Math.random() * Math.PI * 2, s = (Math.random() * .8 + .3) * g * 4;
     particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: .6, max: .6, c: C.lamp, grav: 0 });
@@ -1684,8 +1706,12 @@ function settle(n, ok, guessText) {
     if (settings.mode === 'arcade') { loseLight(1); if (game.lamps <= 0) { record(n, false); hud(); endGame(); return; } }
     n.flash = .45; n.jit = .3;
     record(n, false);
-    floaters.push({ x: noteX(n), y: yOf(n.staff, n.p) - 1.8 * g, text: 'Not ' + guessText, color: C.flare, life: .8, max: .8 });
+    // corrective feedback: name the right answer, light its line or space, and play it
+    const right = n.kind === 'ivl' ? labelOf(n) : settings.answer === 'exact' ? nameOf(n) : nameOf(n, false);
+    floaters.push({ x: noteX(n), y: yOf(n.staff, n.kind === 'ivl' ? Math.max(n.p, n.p2) : n.p) - 1.8 * g, text: '✗ Not ' + guessText + ' — it\u2019s ' + right, color: C.flare, life: 1.1, max: 1.1 });
+    showRight(n, .9);
     if (settings.mode !== 'arcade') tone(150, .2, 'triangle', .08, 120);
+    setTimeout(() => { if (n.kind === 'ivl') { buoyBell(freq(n)); buoyBell(midiFreq(midiOf({ d: n.d2, acc: n.acc2 }))); } else buoyBell(freq(n)); }, 180);
   }
   hud();
 }
@@ -1697,7 +1723,8 @@ function wreck(n) {
     const a = -Math.PI / 2 + (Math.random() - .5) * 2.2, s = (Math.random() + .5) * g * 6;
     particles.push({ x: reefX() + g, y: seaY(), vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: .8, max: .8, c: i % 3 ? C.moon : C.mist, grav: g * 14 });
   }
-  floaters.push({ x: reefX() + 5 * g, y: y - 1.8 * g, text: 'That was ' + labelOf(n), color: C.flare, life: 1.8, max: 1.8 });
+  floaters.push({ x: reefX() + 5 * g, y: y - 1.8 * g, text: '✗ That was ' + labelOf(n), color: C.flare, life: 1.8, max: 1.8 });
+  showRight(n, 1.2);
   if (settings.answer !== 'names' && !isIvl()) flashPiano(pianoKeysFor(midiOf(n), settings.answer === 'exact'), 'show', 1200);
   foghorn();
   game.lost++; game.streak = 0; record(n, false); boatDone();
@@ -1753,6 +1780,8 @@ function update(dt) {
   for (const p of particles) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += p.grav * dt; p.vx *= .95; p.life -= dt; }
   particles = particles.filter(p => p.life > 0);
   for (const f of floaters) { f.y -= g * 1.3 * dt; f.life -= dt; }
+  for (const m of rightMarks) m.life -= dt;
+  rightMarks = rightMarks.filter(m => m.life > 0);
   floaters = floaters.filter(f => f.life > 0);
   shake = Math.max(0, shake - dt); for (const k in nbFlash) nbFlash[k] = Math.max(0, nbFlash[k] - dt); lampFlicker = Math.max(0, lampFlicker - dt);
   if (banner) { banner.life -= dt; if (banner.life <= 0) banner = null; }
@@ -1768,11 +1797,18 @@ function draw() {
   ctx.globalAlpha = 1;
   drawBeam();
   drawSea();
+  drawRightMarks();                                              // under the staff lines, so the lines stay crisp
   drawStaves();
   for (const h of homeward) drawBoat(h.n, h.x, C.lamp, h.t);
   notes.forEach((n, i) => {
     let x = noteX(n); if (n.jit > 0 && !reduceMotion) x += Math.sin(n.jit * 60) * g * .25;
     drawBoat(n, x, n.flash > 0 ? C.flare : C.moon, 0);
+    if (n.flash > 0) {                                           // a cross as well as the red, for color-blind players
+      const y = yOf(n.staff, n.kind === 'ivl' ? Math.max(n.p, n.p2) : n.p);
+      ctx.font = `700 ${g * 1.1}px ${F.ui}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.lineWidth = 3; ctx.strokeStyle = C.deep; ctx.strokeText('✗', x + 1.3 * g, y - .9 * g);
+      ctx.fillStyle = C.flare; ctx.fillText('✗', x + 1.3 * g, y - .9 * g);
+    }
   });
   drawReef();
   drawLighthouse();
@@ -1782,7 +1818,8 @@ function draw() {
   for (const f of floaters) {
     ctx.globalAlpha = Math.min(1, f.life / f.max * 1.8);
     ctx.font = `700 ${g * 1.25}px ${F.ui}`;
-    const x = Math.min(Math.max(f.x, reefX() + 4 * g), W - 3 * g);
+    const hw = ctx.measureText(f.text).width / 2 + 6;          // keep long labels on screen
+    const x = Math.min(Math.max(f.x, reefX() + 4 * g), W - Math.max(3 * g, hw));
     ctx.lineWidth = 4; ctx.strokeStyle = C.deep; ctx.strokeText(f.text, x, f.y);
     ctx.fillStyle = f.color; ctx.fillText(f.text, x, f.y);
   }
@@ -1790,14 +1827,15 @@ function draw() {
     const age = (banner.max || SPLASH) - banner.life;            // seconds since the splash appeared
     const pop = reduceMotion ? 1 : Math.min(1, age / .25);
     const scale = reduceMotion ? 1 : .6 + .4 * (1 - Math.pow(1 - pop, 3)) + (age < .35 ? Math.sin(age / .35 * Math.PI) * .08 : 0);
-    const cx = (reefX() + W) / 2, cy = H * .42;
+    // in the sky band above the top staff line, so it never covers the notes being read
+    const top = yOf(staves()[0], 8), cx = (reefX() + W) / 2, cy = top - 2.85 * g;
     ctx.globalAlpha = Math.min(1, banner.life / (banner.fade || .45), pop * 1.5);
     ctx.save(); ctx.translate(cx, cy); ctx.scale(scale, scale);
-    ctx.font = `${Math.min(g * 4.2, W / 7)}px ${F.display}`;
-    ctx.lineWidth = 10; ctx.lineJoin = 'round'; ctx.strokeStyle = C.deep; ctx.strokeText(banner.text, 0, 0);
+    ctx.font = `${Math.min(g * 2.3, W / 9)}px ${F.display}`;
+    ctx.lineWidth = 8; ctx.lineJoin = 'round'; ctx.strokeStyle = C.deep; ctx.strokeText(banner.text, 0, 0);
     ctx.shadowColor = C.lamp; ctx.shadowBlur = 24; ctx.fillStyle = C.lamp; ctx.fillText(banner.text, 0, 0); ctx.shadowBlur = 0;
-    ctx.font = `600 ${g * 1.05}px ${F.ui}`; ctx.lineWidth = 4; ctx.strokeText(banner.sub.toUpperCase(), 0, g * 2.7);
-    ctx.fillStyle = C.moon; ctx.fillText(banner.sub.toUpperCase(), 0, g * 2.7);
+    ctx.font = `600 ${g * .85}px ${F.ui}`; ctx.lineWidth = 4; ctx.strokeText(banner.sub.toUpperCase(), 0, g * 1.75);
+    ctx.fillStyle = C.moon; ctx.fillText(banner.sub.toUpperCase(), 0, g * 1.75);
     ctx.restore();
   }
   ctx.restore();
@@ -2150,11 +2188,13 @@ function syncPad() {
   $('keys').hidden = piano; $('piano-wrap').hidden = !piano;
   if (piano) { buildPiano(); pianoFollow = null; }
   buildKeys();
+  // keyboard-only parts are wrapped in .kbd-hint, which phones and tablets hide
+  const kb = t => `<span class="kbd-hint">${t}</span>`;
   $('hint').innerHTML = isIvl()
-    ? (settings.ivl === 'easy' ? 'Keyboard: <kbd>2</kbd>–<kbd>8</kbd> to answer' : 'Keyboard: <kbd>2</kbd>–<kbd>8</kbd> for major or perfect · <kbd>Shift</kbd> for minor or diminished' + (settings.ivl === 'hard' ? ' · <kbd>Alt</kbd>/<kbd>Option</kbd> for augmented · <kbd>Shift</kbd>+<kbd>Alt</kbd> for diminished 2, 3, 6, 7' : '')) + ' · <kbd>Esc</kbd> to pause or quit'
+    ? kb((settings.ivl === 'easy' ? 'Keyboard: <kbd>2</kbd>–<kbd>8</kbd> to answer' : 'Keyboard: <kbd>2</kbd>–<kbd>8</kbd> for major or perfect · <kbd>Shift</kbd> for minor or diminished' + (settings.ivl === 'hard' ? ' · <kbd>Alt</kbd>/<kbd>Option</kbd> for augmented · <kbd>Shift</kbd>+<kbd>Alt</kbd> for diminished 2, 3, 6, 7' : '')) + ' · <kbd>Esc</kbd> to pause or quit')
     : settings.answer === 'exact'
-    ? 'Click or tap the exact key · the dot marks middle C · <kbd>Esc</kbd> to pause or quit'
-    : 'Keyboard: <kbd>A</kbd>–<kbd>G</kbd> to answer' + (acc ? ' · hold <kbd>Shift</kbd> for ♯, <kbd>Option</kbd> for ♭' : '') + ' · <kbd>Esc</kbd> to pause or quit';
+    ? 'Click or tap the exact key · the dot marks middle C' + kb(' · <kbd>Esc</kbd> to pause or quit')
+    : kb('Keyboard: <kbd>A</kbd>–<kbd>G</kbd> to answer' + (acc ? ' · hold <kbd>Shift</kbd> for ♯, <kbd>Option</kbd> for ♭' : '') + ' · <kbd>Esc</kbd> to pause or quit');
   if (midiState === 'ready' && !isIvl()) $('hint').innerHTML = '<b style="color:var(--safe)">MIDI keyboard on</b> · ' + $('hint').innerHTML;
 }
 
@@ -2363,7 +2403,7 @@ function showHowTo(then) {
     : settings.answer !== 'names' ? `Name its note: ${tap.toLowerCase()} the matching key on the <b>piano</b>.`
     : `Name its note: ${tap.toLowerCase()} the letter on the pad${touchy() ? '' : ', or type it (<b style="white-space:nowrap">A–G</b>)'}.`;
   const last = settings.mode === 'sprint' ? 'You have <b>60 seconds</b>. Faster answers score more.'
-    : settings.mode === 'practice' ? '<b>Practice</b> is calm water: no lanterns to lose. Press <b>Esc</b> to stop.'
+    : settings.mode === 'practice' ? '<b>Practice</b> is calm water: no lanterns to lose.' + (touchy() ? '' : ' Press <b>Esc</b> to stop.')
     : 'Every <b>8 boats</b> home starts a faster level. A boat on the rocks puts out a lantern.';
   const box = document.createElement('div'); box.className = 'howto-pop'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'howto-title');
   box.innerHTML = `<div class="card"><h2 id="howto-title">How to play</h2><ol>
@@ -2671,7 +2711,7 @@ function tdClasses() {
   const rows = TD.classes.map(c => `<tr><td><b>${esc(c.name)}</b></td><td><span class="code-pill">${esc(c.code)}</span></td><td class="dim">${c.tidal_assignment ? esc(assignText(c.tidal_assignment)) : 'No assignment'}</td>
     <td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" type="button" data-rename="${esc(c.code)}">Rename</button> <button class="btn ghost sm" type="button" data-clear="${esc(c.code)}">Clear Tidal Tones data</button></td></tr>`).join('');
   $('td-body').innerHTML = `
-    <p class="dim" style="margin:0">These are the same classes and codes as your other music games. Students type the code on the welcome screen; their practice then shows up in <b>Progress</b> and their scores go on that class's leaderboard. To delete a class completely, use the Rhythm Trainer's dashboard.</p>
+    <p class="dim" style="margin:0">These are the same classes and codes as your other music games. Students type the code on the welcome screen; their practice then shows up in <b>Progress</b> and their scores go on that class's leaderboard. To delete a class completely, use The Big Score's dashboard.</p>
     ${TD.classes.length ? `<div class="td-wrap"><table class="td-table"><thead><tr><th>Class</th><th>Code</th><th>Tidal Tones assignment</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p><b>No classes yet.</b> Make your first one below.</p>'}
     <form class="td-new" id="td-new"><input id="td-new-name" maxlength="40" placeholder="New class name, e.g. Period 3 Theory" aria-label="New class name"><input id="td-new-code" maxlength="7" style="flex:0 1 220px;text-transform:uppercase" placeholder="Code (optional)" aria-label="Class code (optional)"><button class="btn" type="submit">Create class</button></form>
     <p class="dim" style="margin:0">Leave the code blank for a random one, or pick your own: 4–7 letters and numbers.</p>`;
