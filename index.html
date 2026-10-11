@@ -797,7 +797,7 @@ const ANSWER_DESC = {
   exact: 'Click the exact key on the piano, in the right octave. Middle C has the dot.'
 };
 const MODE_DESC = {
-  arcade: 'Levels: three lanterns. A wrong answer dims a lantern, and a second wrong answer puts it out. A boat on the rocks puts out a whole lantern. Every 8 boats home starts a faster level.',
+  arcade: 'Levels: three lanterns. A wrong answer dims a lantern, and a second wrong answer puts it out. A boat on the rocks puts out a whole lantern. Every 8 boats home starts a new level, and the boats speed up when you are on a roll and ease off when you miss.',
   sprint: 'Speed round: 60 seconds, one boat at a time. The next boat appears the moment you name one, and faster answers score more.',
   practice: 'Practice: calm water, no lanterns to lose, no game over. Press Esc to pause or quit.'
 };
@@ -990,11 +990,36 @@ function pickKey(avoid) {
   return pool[Math.floor(Math.random() * pool.length)] || 'C';
 }
 const ivlKey = v => settings.ivl === 'easy' ? 'n' + v.n : v.id;
-function allowedIvls() {
+function allowedIvls(all) {
   const max = settings.ivl === 'easy' ? 1 : settings.ivl === 'medium' ? 2 : 3;
   let list = IVLS.filter(v => v.tier <= max);
-  if (drillIvls) { const d = list.filter(v => drillIvls.includes(ivlKey(v))); if (d.length) list = d; }
+  if (drillIvls && !all) { const d = list.filter(v => drillIvls.includes(ivlKey(v))); if (d.length) list = d; }
   return list;
+}
+/* ---------- drills: the trouble note(s) a little under half the time, mixed with near neighbours,
+   and never three of the same in a row, so the answer can't be given without reading ---------- */
+const DRILL_MIX = .5;
+let drillHist = [];
+function drillPick(weak, near, same) {
+  const all = weak.concat(near);
+  let pool = near.length && Math.random() >= DRILL_MIX ? near : weak;
+  if (drillHist.length >= 2 && same(drillHist[0], drillHist[1])) {
+    const fresh = c => !same(c, drillHist[0]);
+    pool = pool.some(fresh) ? pool.filter(fresh) : all.some(fresh) ? all.filter(fresh) : pool;
+  }
+  const c = pool[Math.floor(Math.random() * pool.length)];
+  drillHist = [c, drillHist[0]].filter(Boolean);
+  return c;
+}
+// a drill note's neighbours: up to a 3rd above or below on the same staff (and the natural, for a sharp or flat)
+const drillKey = c => c.staff + ':' + c.p + ':' + c.acc;
+function drillNear() {
+  const have = new Set(drill.map(drillKey)), out = new Map();
+  for (const w of drill) for (const dp of [-2, -1, 0, 1, 2]) {
+    const c = { staff: w.staff, p: w.p + dp, acc: 0 }, [lo, hi] = LEDGER[w.staff];
+    if (c.p >= lo && c.p <= hi && !have.has(drillKey(c))) out.set(drillKey(c), c);
+  }
+  return [...out.values()];
 }
 function makeInterval() {
   const key = activeKey();
@@ -1009,7 +1034,11 @@ function makeInterval() {
   let list = allowedIvls().filter(v => Math.abs(accFor(v)) <= 2);
   if (!list.length) list = IVLS.filter(v => v.tier === 1);
   let v = list[0];
-  for (let i = 0; i < 8; i++) { v = list[Math.floor(Math.random() * list.length)]; if (list.length < 2 || v.id !== lastIvl) break; }
+  if (drillIvls) {
+    // interval drill: mix in the intervals one step wider or narrower
+    const near = allowedIvls(true).filter(u => Math.abs(accFor(u)) <= 2 && !drillIvls.includes(ivlKey(u)) && list.some(w => Math.abs(w.n - u.n) <= 1));
+    v = drillPick(list, near, (a, b) => ivlKey(a) === ivlKey(b));
+  } else for (let i = 0; i < 8; i++) { v = list[Math.floor(Math.random() * list.length)]; if (list.length < 2 || v.id !== lastIvl) break; }
   lastIvl = v.id;
   const d2 = d + v.n - 1, li2 = letterIdx(d2), acc2 = accFor(v);
   const showAcc = acc2 !== keyAccFor(key, li2) ? acc2 : null;
@@ -1019,7 +1048,8 @@ function makeNote() {
   if (isIvl()) return makeInterval();
   const c = candidates();
   let pick = c[0];
-  for (let i = 0; i < 8; i++) {
+  if (drill) pick = drillPick(drill, drillNear(), (a, b) => drillKey(a) === drillKey(b));
+  else for (let i = 0; i < 8; i++) {
     pick = c[Math.floor(Math.random() * c.length)];
     if (c.length < 2 || !lastPick || pick.staff !== lastPick.staff || pick.p !== lastPick.p || pick.acc !== lastPick.acc) break;
   }
@@ -1055,7 +1085,21 @@ function tuning() {
   if (settings.mode === 'sprint') return { T: 6 * k, I: 0 };
   const L = game.level - 1;
   const decay = isIvl() || newbieOn() ? .92 : .88;                              // intervals also speed up more gently per level
-  return { T: Math.max(1.3 * k, 8 * k * Math.pow(decay, L)), I: Math.max(.5 * k, 2.8 * k * Math.pow(decay + .01, L)) };
+  const p = game.pace || 1;                                                      // speed follows accuracy (see adaptPace)
+  return { T: Math.max(1.3 * k, 8 * k * Math.pow(decay, L) / p), I: Math.max(.5 * k, 2.8 * k * Math.pow(decay + .01, L) / p) };
+}
+/* Levels: boat speed follows the last 12 answers, aiming at about 85% right.
+   90% or better speeds the boats up a little after each answer (up to 50% faster than the level's base);
+   under 75% eases off a little (down to 15% slower than the level's base); in between holds steady.
+   Every player gets the same rule, so scores stay comparable. */
+const PACE_WIN = 12, PACE_MIN = .85, PACE_MAX = 1.5;
+function adaptPace(ok) {
+  if (settings.mode !== 'arcade') return;
+  const r = game.recent; r.push(ok); if (r.length > PACE_WIN) r.shift();
+  if (r.length < 8) return;
+  const acc = r.filter(Boolean).length / r.length;
+  if (acc >= .9) game.pace = Math.min(PACE_MAX, game.pace * 1.03);
+  else if (acc < .75) game.pace = Math.max(PACE_MIN, game.pace * .96);
 }
 function roomToSpawn() {
   const last = notes[notes.length - 1];
@@ -1067,8 +1111,8 @@ const bestKey = () => ['harborlights', newbieOn() ? 'newbie' : '', settings.mode
 function startGame() {
   nbStreak = {}; nbFlash = {};
   ensureAudio();
-  Object.assign(game, { running: true, paused: false, over: false, score: 0, level: 1, hits: 0, wrong: 0, lost: 0, streak: 0, bestStreak: 0, lamps: 6, time: 60, elapsed: 0, lock: 0, stats: {} });
-  notes = []; homeward = []; floaters = []; particles = []; rightMarks = []; spawnT = .5; lastPick = null;
+  Object.assign(game, { running: true, paused: false, over: false, score: 0, level: 1, hits: 0, wrong: 0, lost: 0, streak: 0, bestStreak: 0, lamps: 6, pace: 1, recent: [], time: 60, elapsed: 0, lock: 0, stats: {} });
+  notes = []; homeward = []; floaters = []; particles = []; rightMarks = []; spawnT = .5; lastPick = null; drillHist = [];
   $('overlay').hidden = true; $('results').hidden = true;
   syncPad(); hud();
   game.keyBag = null; game.key = pickKey(); game.keyPending = false; game.pendingSplash = null; game.sinceKey = 0; lastIvl = null; game.keyOn = false; game.hold = 0;
@@ -1274,7 +1318,7 @@ function applyFocus(label) {
   if (L === 'Intervals') return offer('Intervals', 'Practice mode: name the distance between the two notes.', () => { ivls(); applySettings(); });
   const ordN = Object.keys(ORD).find(n => ORD[n] === L);
   const iv = IVL_BY_ID[L] ? L : ordN ? 'n' + ordN : null;
-  if (iv) return offer('Interval: ' + L, 'Every boat carries a ' + L + '. Spot it fast!', () => {
+  if (iv) return offer('Interval: ' + L, 'Lots of boats carry a ' + L + ', mixed with the intervals next to it. Spot it fast!', () => {
     // a numbers-only skill needs "Numbers only"; a quality skill keeps the teacher's interval types if they already include it
     const need = iv[0] === 'n' ? 'easy' : IVL_BY_ID[iv].tier === 3 ? 'hard' : 'medium', T = ['easy', 'medium', 'hard'];
     ivls(); if (!(teacherSet && teacherSet.has('ivl') && need !== 'easy' && T.indexOf(settings.ivl) >= T.indexOf(need))) settings.ivl = need;
@@ -1284,7 +1328,7 @@ function applyFocus(label) {
   if (m) {
     const li = LETTERS.indexOf(m[1]), acc = m[2] === '♯' ? 1 : m[2] === '♭' ? -1 : 0, d = li + 7 * +m[3], name = L.split(' in ')[0];
     const st = [settings.clef === 'grand' ? 'treble' : settings.clef, 'treble', 'bass', 'alto'].find(s => BOTTOM[s] != null && d - BOTTOM[s] >= LEDGER[s][0] && d - BOTTOM[s] <= LEDGER[s][1]);
-    if (st) return offer('Drill ' + name, 'Every boat carries ' + name + '. Name it every time!', () => { notes(); $('clef-' + st).checked = true; applySettings(); drill = [{ staff: st, p: d - BOTTOM[st], acc }]; });
+    if (st) return offer('Drill ' + name, 'Lots of boats carry ' + name + ', mixed with its neighbours. Read each one!', () => { notes(); $('clef-' + st).checked = true; applySettings(); drill = [{ staff: st, p: d - BOTTOM[st], acc }]; });
   }
   if (teacherSet) return;   // the teacher's settings are already set up (and their toast is showing)
   $('more').hidden = false; $('more-btn').setAttribute('aria-expanded', 'true'); showMoreTab('staff');
@@ -1885,9 +1929,9 @@ function settle(n, ok, guessText) {
       floaters.push({ x: noteX(n), y: yOf(n.staff, n.p) + 2.2 * g, text: '+' + pts, color: C.safe, life: .9, max: .9 });
     } else pts = 10 * (settings.mode === 'arcade' ? game.level : 1) * mult;
     game.score += pts;
-    record(n, true);
+    record(n, true); adaptPace(true);
     if (settings.mode === 'arcade' && game.hits % 8 === 0) {
-      game.level++; tideUp();
+      game.level++; tideUp(); game.pace = 1 + (game.pace - 1) / 2;
       if (expertOn() && game.level >= EXPERT_FROM) { game.keyPending = true; game.pendingSplash = game.level; }
       else if (isIvl() && settings.keys.length > 1) { game.keyPending = true; game.pendingSplash = game.level; }
       else levelSplash(game.level);
@@ -1895,6 +1939,7 @@ function settle(n, ok, guessText) {
     boatDone();
   } else {
     game.wrong++; game.streak = 0; game.lock = .35;
+    adaptPace(false);
     if (settings.mode === 'arcade') { loseLight(1); if (game.lamps <= 0) { record(n, false); hud(); endGame(); return; } }
     n.flash = .45; n.jit = .3;
     record(n, false);
@@ -1919,7 +1964,7 @@ function wreck(n) {
   showRight(n, 1.2);
   if (settings.answer !== 'names' && !isIvl()) flashPiano(pianoKeysFor(midiOf(n), settings.answer === 'exact'), 'show', 1200);
   foghorn();
-  game.lost++; game.streak = 0; record(n, false); boatDone();
+  game.lost++; game.streak = 0; record(n, false); adaptPace(false); boatDone();
   if (settings.mode === 'arcade') { loseLight(2); if (game.lamps <= 0) { hud(); endGame(); return; } }
   hud();
 }
