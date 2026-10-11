@@ -242,6 +242,13 @@ canvas { display: block; width: 100%; }
 .overlay p { margin: 0; color: var(--mist); max-width: 48ch; text-wrap: balance; }
 .overlay .tag { font-size: 12px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--lamp); }
 
+/* on-screen pause for touch players: top-right sky, clear of the lighthouse, staff and boats */
+.pause-btn { position: absolute; top: 8px; right: 8px; z-index: 1; width: 44px; height: 44px; display: grid; place-items: center; padding: 0; color: var(--moon); background: color-mix(in srgb, var(--tide) 78%, transparent); border: 1px solid var(--rope); border-radius: 999px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.pause-btn svg { width: 16px; height: 16px; }
+.pause-btn:hover { border-color: var(--lamp); }
+.pause-btn:focus-visible { outline: 2px solid var(--lamp); outline-offset: 2px; }
+.pause-btn[hidden] { display: none; }
+html[data-skin="day"] .pause-btn { box-shadow: 0 4px 12px -6px var(--shadow); }
 .ov-inner { display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 100%; }
 .ranges { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 14px; }
 .rangepick { display: grid; grid-template-columns: auto auto auto; align-items: center; gap: 2px 6px; background: color-mix(in srgb, var(--deep) 70%, transparent); border: 1px solid var(--rope); border-radius: 12px; padding: 6px 8px 8px; }
@@ -462,6 +469,7 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
       <div class="play-sum" id="play-sum"></div>
       <div class="play-hint"><span class="kbd-hint">or press <kbd>Space</kbd></span><span class="kbd-hint" aria-hidden="true">·</span><button type="button" class="linkish" id="howto-btn">How to play</button><span class="best-note" id="best-note" hidden>Best with these settings: <b id="setup-best">0</b></span></div>
     </div>
+    <button class="pause-btn game-only" id="pause-btn" type="button" aria-label="Pause" title="Pause" hidden><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="3" y="2" width="3.6" height="12" rx="1"/><rect x="9.4" y="2" width="3.6" height="12" rx="1"/></svg></button>
     <div class="overlay" id="overlay" hidden>
       <div class="ov-inner">
         <div class="tag" id="ov-tag"></div>
@@ -1765,8 +1773,10 @@ function answerIvl(id, el) {
   const n = notes[0]; if (n.kind !== 'ivl') return;
   const ok = settings.ivl === 'easy' ? 'n' + n.ivl.n === id : n.ivl.id === id;
   if (el) { el.classList.remove('hit', 'miss'); void el.offsetWidth; el.classList.add(ok ? 'hit' : 'miss'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('hit', 'miss'), 260); }
-  settle(n, ok, id[0] === 'n' ? ORD[id.slice(1)] : id);
+  settle(n, ok, ivlSay(id));
 }
+// the miss message names intervals the way the pad does: "a 2nd … an octave" on Easy, M3 / m3 / P5 / A4 / d5 with qualities
+const ivlSay = id => id[0] === 'n' ? (id === 'n8' ? 'an octave' : 'a ' + ORD[id.slice(1)]) : id;
 // lanterns are counted in halves (6 = three full lanterns)
 function loseLight(halves) {
   const before = game.lamps;
@@ -1804,7 +1814,7 @@ function settle(n, ok, guessText) {
     n.flash = .45; n.jit = .3;
     record(n, false);
     // corrective feedback: name the right answer, light its line or space, and play it
-    const right = n.kind === 'ivl' ? labelOf(n) : settings.answer === 'exact' ? nameOf(n) : nameOf(n, false);
+    const right = n.kind === 'ivl' ? ivlSay(ivlKey(n.ivl)) : settings.answer === 'exact' ? nameOf(n) : nameOf(n, false);
     floaters.push({ x: noteX(n), y: yOf(n.staff, n.kind === 'ivl' ? Math.max(n.p, n.p2) : n.p) - 1.8 * g, text: '✗ Not ' + guessText + ' — it\u2019s ' + right, color: C.flare, life: 1.1, max: 1.1 });
     showRight(n, .9);
     if (settings.mode !== 'arcade') tone(150, .2, 'triangle', .08, 120);
@@ -1836,6 +1846,8 @@ function frame(now) {
   if (!game.paused) update(dt);
   draw();
   followLead();
+  const pb = $('pause-btn'), hideP = !game.running || game.paused || game.over;   // only while the boats are sailing
+  if (pb.hidden !== hideP) pb.hidden = hideP;
   requestAnimationFrame(frame);
 }
 
@@ -2554,6 +2566,7 @@ $('settings').addEventListener('change', e => {
   drill = null; applySettings();
 });
 $('sound-btn').addEventListener('click', () => { settings.sound = !settings.sound; ensureAudio(); syncSound(); store.set('harborlights:settings', settings); });
+$('pause-btn').addEventListener('click', e => { e.stopPropagation(); if (view() === 'game') pause(true); });
 $('ov-btn').addEventListener('click', () => ovActions[0]?.());
 $('ov-btn2').addEventListener('click', () => ovActions[1]?.());
 $('start-btn').addEventListener('click', playPressed);
