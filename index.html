@@ -414,7 +414,10 @@ html[data-skin="day"] .icon-pick button { background: rgba(19,49,74,.04); border
 html[data-skin="day"] .icon-pick button:hover { border-color: rgba(19,49,74,.5); }
 html[data-skin="day"] .icon-pick button[aria-pressed="true"] { border-color: var(--lamp); background: color-mix(in srgb, var(--lamp) 14%, transparent); box-shadow: none; }
 html[data-skin="day"] .icon-pick button .ic-svg { color: var(--moon); }
-/* the Look tab: one swatch button per skin, each with a tiny harbor in its own colors */
+/* the Skins menu: a header button that opens a small popover with one swatch button per skin, each with a tiny harbor in its own colors */
+.skin-menu { position: relative; display: flex; }
+.skin-pop { position: absolute; z-index: 40; top: calc(100% + 8px); right: 0; width: min(460px, calc(100vw - 16px)); background: var(--tide); border: 1px solid var(--lamp); border-radius: 14px; padding: 10px; box-shadow: 0 18px 40px -10px var(--shadow); text-transform: none; letter-spacing: 0; }
+.skin-note { margin: 10px 2px 0; font-size: 13px; line-height: 1.3; color: var(--mist); }
 .skin-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .skin-pick button { display: flex; flex-direction: column; gap: 6px; align-items: stretch; text-align: left; padding: 8px 8px 9px; border: 1px solid var(--rope); border-radius: 12px; background: var(--deep); color: var(--moon); font: 600 15px var(--f-ui); cursor: pointer; }
 .skin-pick button:hover { border-color: var(--mist); }
@@ -433,6 +436,16 @@ html[data-skin="day"] .icon-pick button .ic-svg { color: var(--moon); }
 .mtg-home a:hover, .mtg-home a:focus-visible { opacity: 1; border-color: currentColor; }
 .mtg-home svg { width: 15px; height: 15px; flex: none; }
 header:has(> .mtg-home) { flex-wrap: wrap; }
+/* ---------- Header hints (same in every Music Theory Game): a small label under a header button ---------- */
+.mtg-hint { position: fixed; left: 0; top: 0; z-index: 9999; max-width: min(260px, calc(100vw - 16px)); padding: 7px 11px; border-radius: 9px; background: var(--hint-bg); color: var(--hint-ink); border: 1px solid var(--hint-edge); box-shadow: 0 8px 20px -6px rgba(0,0,0,.45); font: 600 13.5px/1.3 system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: normal; text-transform: none; text-align: left; pointer-events: none; opacity: 0; visibility: hidden; transform: translateY(-3px); transition: opacity .14s, transform .14s, visibility 0s .14s; }
+.mtg-hint.up { transform: translateY(3px); }
+.mtg-hint.on { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+.mtg-hint::before { content: ''; position: absolute; left: var(--ax, 50%); top: -6px; width: 10px; height: 10px; margin-left: -6px; background: var(--hint-bg); border: 1px solid var(--hint-edge); border-width: 1px 0 0 1px; transform: rotate(45deg); }
+.mtg-hint.up::before { top: auto; bottom: -6px; border-width: 0 1px 1px 0; }
+html[data-skin="day"] .mtg-hint { box-shadow: 0 8px 20px -8px rgba(20,40,80,.35); }
+[data-hint] { -webkit-touch-callout: none; }
+@media (prefers-reduced-motion: reduce) { .mtg-hint, .mtg-hint.up { transform: none; transition: none; } }
+.mtg-hint { --hint-bg: var(--tide-2); --hint-ink: var(--moon); --hint-edge: var(--rope); }
 .devtag { display: inline-block; font: 700 10px var(--f-ui, sans-serif); letter-spacing: .12em; padding: 3px 6px 1px; margin-left: 6px; border-radius: 999px; background: var(--lamp, #ffc45c); color: var(--deep, #0c1a24); vertical-align: middle; }
 </style>
 </head>
@@ -453,7 +466,18 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
       <div class="cell"><span class="k">Best</span><span class="v" id="hud-best">0</span></div>
     </div>
     <div class="top-actions">
-      <button class="iconbtn who" id="who-btn" type="button" title="Switch student or class">👤 Sign in</button>
+      <div class="skin-menu">
+        <button class="iconbtn" id="skin-btn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="skin-pop">🎨 Skins</button>
+        <div class="skin-pop" id="skin-pop" role="dialog" aria-label="Skins" hidden>
+          <div class="skin-pick" id="skin-pick" role="group" aria-label="Skins">
+            <button type="button" data-look="clean" aria-pressed="false"><span class="sw" aria-hidden="true" style="--a:#172c45;--s:#0c1b2c;--b:#ffcc66;--c:#f1f5f9"></span><b>Clean</b><small>Calm night harbor</small></button>
+            <button type="button" data-look="day" aria-pressed="false"><span class="sw" aria-hidden="true" style="--a:#d5eefb;--s:#3d9fd0;--b:#c2410c;--c:#13314a"></span><b>Day</b><small>Sunny and bright</small></button>
+            <button type="button" data-look="classic" aria-pressed="false"><span class="sw" aria-hidden="true" style="--a:#13283a;--s:#0a1720;--b:#ffc45c;--c:#eee8da"></span><b>Classic</b><small>The first lamp-lit look</small></button>
+          </div>
+          <p class="skin-note">Your skin is saved on this device and used in every Music Theory Game.</p>
+        </div>
+      </div>
+      <button class="iconbtn who" id="who-btn" type="button">👤 Sign in</button>
       <button class="iconbtn" id="midi-btn" type="button" data-state="off" aria-describedby="midi-note"><i></i><span id="midi-label">MIDI keyboard</span></button>
       <button class="iconbtn" id="board-btn" type="button">Leaderboard</button>
       <button class="iconbtn" id="sound-btn" type="button" aria-pressed="true">Sound on</button>
@@ -523,7 +547,6 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
         <button type="button" role="tab" data-tab="staff" id="tab-staff" aria-controls="panel-staff" aria-selected="true">Staff</button>
         <button type="button" role="tab" data-tab="answers" id="tab-answers" aria-controls="panel-answers" aria-selected="false">Answers</button>
         <button type="button" role="tab" data-tab="keys" id="tab-keys" aria-controls="panel-keys" aria-selected="false">Keys &amp; intervals</button>
-        <button type="button" role="tab" data-tab="look" id="tab-look" aria-controls="panel-look" aria-selected="false">Look</button>
       </div>
       <div class="mpanel" data-panel="staff" id="panel-staff" role="tabpanel" aria-labelledby="tab-staff">
         <fieldset>
@@ -601,16 +624,6 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
           </div>
           <div class="keychips" id="keychips"></div>
           <p class="muted small" id="key-count" style="margin-top:8px"></p>
-        </fieldset>
-      </div>
-      <div class="mpanel" data-panel="look" id="panel-look" role="tabpanel" aria-labelledby="tab-look" hidden>
-        <fieldset class="wide">
-          <legend>Look</legend>
-          <div class="skin-pick" id="skin-pick">
-            <button type="button" data-look="clean" aria-pressed="false"><span class="sw" aria-hidden="true" style="--a:#172c45;--s:#0c1b2c;--b:#ffcc66;--c:#f1f5f9"></span><b>Clean</b><small>Calm night harbor</small></button>
-            <button type="button" data-look="day" aria-pressed="false"><span class="sw" aria-hidden="true" style="--a:#d5eefb;--s:#3d9fd0;--b:#c2410c;--c:#13314a"></span><b>Day</b><small>Sunny and bright</small></button>
-            <button type="button" data-look="classic" aria-pressed="false"><span class="sw" aria-hidden="true" style="--a:#13283a;--s:#0a1720;--b:#ffc45c;--c:#eee8da"></span><b>Classic</b><small>The first lamp-lit look</small></button>
-          </div>
         </fieldset>
       </div>
     </div>
@@ -806,6 +819,29 @@ function setSkin(s) {
   try { localStorage.setItem('mtg_skin_v1', s); } catch {}
   readSkin();
   document.querySelectorAll('#skin-pick [data-look]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.look === s)));
+}
+function skinMenu(open) {
+  const pop = $('skin-pop');
+  if (open === !pop.hidden) return;
+  pop.hidden = !open; $('skin-btn').setAttribute('aria-expanded', String(open));
+  if (!open) return;
+  pop.style.transform = '';                                      // keep the popover on screen (phones: the button may wrap to the left)
+  const r = pop.getBoundingClientRect(), w = document.documentElement.clientWidth, dx = r.left < 8 ? 8 - r.left : r.right > w - 8 ? w - 8 - r.right : 0;
+  if (dx) pop.style.transform = `translateX(${dx}px)`;
+  (pop.querySelector('[aria-pressed="true"]') || pop.querySelector('button')).focus();
+}
+function initSkinMenu() {
+  const menu = document.querySelector('.skin-menu');
+  $('skin-btn').addEventListener('click', () => skinMenu($('skin-pop').hidden));
+  $('skin-pick').addEventListener('click', e => { const b = e.target.closest('[data-look]'); if (b) { setSkin(b.dataset.look); skinMenu(false); $('skin-btn').focus(); } });
+  menu.addEventListener('keydown', e => {
+    if ($('skin-pop').hidden) return;
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); skinMenu(false); $('skin-btn').focus(); return; }
+    const items = [...document.querySelectorAll('#skin-pick [data-look]')], i = items.indexOf(document.activeElement);
+    if (i >= 0 && ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp'].includes(e.key)) { e.preventDefault(); e.stopPropagation(); items[(i + (['ArrowRight', 'ArrowDown'].includes(e.key) ? 1 : items.length - 1)) % items.length].focus(); }
+  });
+  menu.addEventListener('focusout', e => { if (e.relatedTarget && !menu.contains(e.relatedTarget)) skinMenu(false); });
+  document.addEventListener('click', e => { if (!e.target.closest('.skin-menu')) skinMenu(false); });
 }
 
 const DEFAULT_RANGE = () => ({ treble: [0, 8], bass: [0, 8], alto: [0, 8] });
@@ -1181,12 +1217,57 @@ function applyFocusFromUrl() {
   q.delete('focus'); history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash);
   try { applyFocus(f); } catch (e) { console.warn('focus link:', e); }
 }
+// ---------- teacher links from the home page's Assign page: ?settings=<base64url JSON> sets every option ----------
+// Keys: game, level, clef, mode (same values as tidal_assignment), filter, acc, trebleLo/Hi, bassLo/Hi, altoLo/Hi
+// (pitch names like "E4", or "auto" = what the difficulty picks), answer, names, labels, ivl ("auto" too), keys (key ids).
+let teacherSet = null;   // which settings a ?settings= link chose, so a ?focus= skill keeps them
+function applySettingsFromUrl() {
+  const q = new URLSearchParams(location.search), raw = q.get('settings'); if (raw == null) return;
+  q.delete('settings'); history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash);
+  let s;
+  try {
+    const b = raw.replace(/-/g, '+').replace(/_/g, '/');
+    s = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(b + '='.repeat((4 - b.length % 4) % 4)), c => c.charCodeAt(0))));
+  } catch (e) { console.warn('settings link:', e); return; }
+  if (!s || typeof s !== 'object' || Array.isArray(s)) return;
+  const set = new Set();
+  try {
+    if (['notes', 'intervals'].includes(s.game)) { settings.game = s.game; $('gametype-' + s.game).checked = true; set.add('game'); }
+    if (['newbie', 'easy', 'medium', 'hard', 'expert'].includes(s.level)) {
+      // the same mapping as "Use these settings": Intervals has no Newbie or Expert
+      applyLevel(isIvl() && s.level === 'expert' ? 'hard' : isIvl() && s.level === 'newbie' ? 'easy' : s.level);
+      set.add('level'); if (isIvl()) set.add('ivl');
+    }
+    // the radios in the start screen and More options (applySettings reads them)
+    for (const k of ['clef', 'mode', 'filter', 'acc', 'answer', 'names', 'labels', 'ivl']) {
+      const v = s[k], inp = typeof v === 'string' && /^[a-z]+$/.test(v) && $('settings').querySelector(`input[name="${k}"][value="${v}"]`);
+      if (inp) { inp.checked = true; set.add(k); }
+    }
+    if (Array.isArray(s.keys)) {
+      const keys = MAJOR.map(k => k.id).filter(id => s.keys.includes(id));
+      if (keys.length) { settings.keys = keys; set.add('keys'); }
+    }
+    for (const st of ['treble', 'bass', 'alto']) {
+      const pos = v => { if (typeof v !== 'string') return null; for (let p = LEDGER[st][0]; p <= LEDGER[st][1]; p++) if (PITCH_NAME(BOTTOM[st] + p) === v) return p; return null; };
+      const lo = pos(s[st + 'Lo']), hi = pos(s[st + 'Hi']);
+      if (lo == null && hi == null) continue;
+      const r = [lo ?? settings.range[st][0], hi ?? settings.range[st][1]];
+      if (r[1] - r[0] >= MIN_SPAN) { settings.range[st] = r; set.add('range'); }
+    }
+  } catch (e) { console.warn('settings link:', e); }
+  if (!set.size) return;
+  teacherSet = set;
+  drill = null; applySettings();
+  focusToast('🎯 Your teacher\'s settings are ready. Press <b>Light the lamp</b>!');
+}
 function applyFocus(label) {
   const L = String(label);
   const offer = (title, text, setup) => showOverlay('Practice', title, text,
     ['Start practice', () => { ensureAudio(); $('overlay').hidden = true; setup(); goTo('game', startGame); }], ['Not now', () => { $('overlay').hidden = true; }], '');
-  const notes = () => { $('gametype-notes').checked = true; settings.game = 'notes'; $('mode-practice').checked = true; };
-  const ivls = () => { $('gametype-intervals').checked = true; settings.game = 'intervals'; $('mode-practice').checked = true; };
+  // a skill opens in Practice, unless a teacher's ?settings= link chose the mode
+  const practice = () => { if (!(teacherSet && teacherSet.has('mode'))) $('mode-practice').checked = true; };
+  const notes = () => { $('gametype-notes').checked = true; settings.game = 'notes'; practice(); };
+  const ivls = () => { $('gametype-intervals').checked = true; settings.game = 'intervals'; practice(); };
   const clef = { 'Treble clef notes': 'treble', 'Bass clef notes': 'bass', 'Alto clef notes': 'alto' }[L];
   if (clef) return offer(L, 'Calm water and no lanterns to lose. Just you and the ' + clef + ' clef.', () => { notes(); $('clef-' + clef).checked = true; applySettings(); });
   if (L === 'Ledger lines') return offer('Ledger lines', 'Boats sail above and below the staff. Count the lines out from the staff!', () => { notes(); for (const st of ['treble', 'bass', 'alto']) settings.range[st] = LEDGER[st].slice(); $('filter-all').checked = true; applySettings(); });
@@ -1194,7 +1275,10 @@ function applyFocus(label) {
   const ordN = Object.keys(ORD).find(n => ORD[n] === L);
   const iv = IVL_BY_ID[L] ? L : ordN ? 'n' + ordN : null;
   if (iv) return offer('Interval: ' + L, 'Every boat carries a ' + L + '. Spot it fast!', () => {
-    ivls(); settings.ivl = iv[0] === 'n' ? 'easy' : IVL_BY_ID[iv].tier === 3 ? 'hard' : 'medium'; $('ivl-' + settings.ivl).checked = true; applySettings(); drillIvls = [iv];
+    // a numbers-only skill needs "Numbers only"; a quality skill keeps the teacher's interval types if they already include it
+    const need = iv[0] === 'n' ? 'easy' : IVL_BY_ID[iv].tier === 3 ? 'hard' : 'medium', T = ['easy', 'medium', 'hard'];
+    ivls(); if (!(teacherSet && teacherSet.has('ivl') && need !== 'easy' && T.indexOf(settings.ivl) >= T.indexOf(need))) settings.ivl = need;
+    $('ivl-' + settings.ivl).checked = true; applySettings(); drillIvls = [iv];
   });
   const m = L.match(/^([A-G])([♯♭]?)(\d)/);
   if (m) {
@@ -1202,6 +1286,7 @@ function applyFocus(label) {
     const st = [settings.clef === 'grand' ? 'treble' : settings.clef, 'treble', 'bass', 'alto'].find(s => BOTTOM[s] != null && d - BOTTOM[s] >= LEDGER[s][0] && d - BOTTOM[s] <= LEDGER[s][1]);
     if (st) return offer('Drill ' + name, 'Every boat carries ' + name + '. Name it every time!', () => { notes(); $('clef-' + st).checked = true; applySettings(); drill = [{ staff: st, p: d - BOTTOM[st], acc }]; });
   }
+  if (teacherSet) return;   // the teacher's settings are already set up (and their toast is showing)
   $('more').hidden = false; $('more-btn').setAttribute('aria-expanded', 'true'); showMoreTab('staff');
   focusToast('Pick your clef and range in More options, then light the lamp to practice!');
 }
@@ -2502,7 +2587,7 @@ function buildQuick() {
     const t = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length]; t.focus(); showMoreTab(t.dataset.tab);
   });
   $('howto-btn').addEventListener('click', () => showHowTo(null));
-  $('skin-pick').addEventListener('click', e => { const b = e.target.closest('[data-look]'); if (b) setSkin(b.dataset.look); });
+  initSkinMenu();
   setSkin(document.documentElement.dataset.skin);
   syncQuick();
 }
@@ -2997,10 +3082,93 @@ function boot(data) {
   requestAnimationFrame(t => { last = t; frame(t); });
   updateWho();
   if (!getProfile() && !isGuest()) showWelcome(false); else refreshClass();
+  applySettingsFromUrl();
   applyFocusFromUrl();
   try { if (localStorage.getItem('tidaltones:midi') === '1') connectMidi(); } catch {}
 }
 boot({});
+/* ---------- Header hints (same in every Music Theory Game): hover, keyboard focus or long-press a header button to see what it does ---------- */
+function headerHints(HINTS) {
+  const tip = document.createElement('div'); tip.className = 'mtg-hint'; tip.setAttribute('aria-hidden', 'true');
+  const descs = document.createElement('div'); descs.hidden = true;   // screen readers get each hint through aria-describedby
+  document.body.append(tip, descs);
+  let n = 0, hov = null, cur = null, timer = 0, press = null, eat = null;
+  const textFor = el => { const h = HINTS[el.dataset.hint]; return (typeof h === 'function' ? h(el) : h) || ''; };
+  function scan() {
+    for (const sel of Object.keys(HINTS)) document.querySelectorAll(sel).forEach(el => {
+      if (el.dataset.hint) return;
+      el.dataset.hint = sel; el.removeAttribute('title');
+      const d = document.createElement('span'); d.id = 'mtg-hint-' + (++n); descs.append(d);
+      el.setAttribute('aria-describedby', ((el.getAttribute('aria-describedby') || '') + ' ' + d.id).trim());
+    });
+    refresh();
+  }
+  function refresh() {   // keep each description current, without repeating the button's own name
+    document.querySelectorAll('[data-hint]').forEach(el => {
+      const d = document.getElementById((el.getAttribute('aria-describedby') || '').split(' ').find(id => id.startsWith('mtg-hint-')));
+      if (!d) return;
+      const name = (el.getAttribute('aria-label') || el.textContent).trim().toLowerCase();
+      let s = textFor(el);
+      if (s.toLowerCase().startsWith(name + ':')) s = s.slice(name.length + 1).trim();
+      if (s.toLowerCase() === name) s = '';
+      if (d.textContent !== s) d.textContent = s;
+    });
+    if (cur) show(cur);
+  }
+  function show(el) {
+    const s = textFor(el);
+    if (!s || !el.isConnected || !el.getClientRects().length || el.getAttribute('aria-expanded') === 'true') return hide();
+    cur = el; tip.textContent = s;
+    const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight, m = 8;
+    const x = Math.max(m, Math.min(innerWidth - w - m, r.left + r.width / 2 - w / 2));
+    const up = r.bottom + 10 + h + m > innerHeight && r.top - 10 - h >= m;   // flip above only when there's no room below
+    tip.style.left = x + 'px'; tip.style.top = (up ? r.top - 10 - h : r.bottom + 10) + 'px';
+    tip.style.setProperty('--ax', Math.max(12, Math.min(w - 12, r.left + r.width / 2 - x)) + 'px');
+    tip.classList.toggle('up', up); tip.classList.add('on');
+  }
+  function hide() { clearTimeout(timer); hov = cur = null; tip.classList.remove('on'); }
+  const hintEl = t => t && t.closest ? t.closest('[data-hint]') : null;
+  // mouse: show after a short rest on the button
+  document.addEventListener('pointerover', e => {
+    if (e.pointerType !== 'mouse') return;
+    const el = hintEl(e.target); if (el === hov) return;
+    hide(); if (el) { hov = el; timer = setTimeout(() => show(el), 300); }
+  });
+  document.addEventListener('pointerout', e => { if (e.pointerType === 'mouse' && hov && !hov.contains(e.relatedTarget)) hide(); });
+  // touch: a long press shows the hint (and doesn't press the button); letting go hides it
+  document.addEventListener('pointerdown', e => {
+    hide(); eat = null; press = null;
+    if (e.pointerType === 'mouse') return;
+    const el = hintEl(e.target); if (!el) return;
+    press = { el, x: e.clientX, y: e.clientY };
+    timer = setTimeout(() => { eat = el; show(el); }, 500);
+  }, true);
+  document.addEventListener('pointermove', e => { if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 10) { press = null; if (!eat) hide(); } }, true);
+  const release = () => { if (!press && !eat) return; press = null; hide(); if (eat) { const was = eat; setTimeout(() => { if (eat === was) eat = null; }, 700); } };
+  document.addEventListener('pointerup', release, true);
+  document.addEventListener('pointercancel', release, true);
+  document.addEventListener('click', e => { if (eat && eat.contains(e.target)) { e.preventDefault(); e.stopImmediatePropagation(); eat = null; } }, true);
+  document.addEventListener('contextmenu', e => { if ((press || eat) && hintEl(e.target)) e.preventDefault(); }, true);
+  // keyboard: show while a header button has keyboard focus
+  document.addEventListener('focusin', e => { const el = hintEl(e.target); if (el && el.matches(':focus-visible')) { hide(); show(el); } });
+  document.addEventListener('focusout', e => { if (cur && hintEl(e.target) === cur) hide(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && cur) hide(); }, true);
+  addEventListener('scroll', hide, true); addEventListener('resize', hide); addEventListener('blur', hide);
+  scan();
+  // buttons change their words (sound on/off, signed in, MIDI connected): keep the hints in step
+  const mo = new MutationObserver(recs => { if (recs.some(r => hintEl(r.target.nodeType === 1 ? r.target : r.target.parentElement))) refresh(); });
+  document.querySelectorAll('header').forEach(h => mo.observe(h, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['aria-pressed', 'aria-label', 'data-state', 'hidden'] }));
+}
+headerHints({
+  '.mtg-home a[href="https://drkeyzzz.github.io/"]': 'Back to all the games',
+  '.mtg-home a[href*="/report/"]': 'Your trophies, badges and what to practice next',
+  '#skin-btn': 'Change how the game looks',
+  '#who-btn': () => { const p = getProfile(); return p ? `Signed in as ${displayName(p)} · switch student` : 'Sign in so your scores and progress are saved'; },
+  '#midi-btn': () => ({ ready: 'MIDI keyboard connected', asking: 'Looking for your MIDI keyboard…', unsupported: "This browser can't use MIDI keyboards", blocked: 'MIDI is blocked: allow it, then try again', none: 'No keyboard found: plug it in, try again' })[midiState] || 'Connect a MIDI keyboard to play the notes',
+  '#board-btn': 'See the top scores',
+  '#sound-btn': el => el.getAttribute('aria-pressed') === 'false' ? 'Sound is off · turn it on' : 'Sound is on · turn it off',
+  '#teacher-btn': 'For teachers: classes, scores and assignments',
+});
 })();
 </script>
 </body>
