@@ -1377,6 +1377,7 @@ function endGame() {
 
 let ovActions = [];
 function showOverlay(tag, title, text, primary, secondary, keys = '') {
+  { const o = document.getElementById('ov-sw'); if (o) o.remove(); }
   $('ov-tag').textContent = tag; $('ov-title').textContent = title; $('ov-text').textContent = text;
   $('ov-btn').textContent = primary[0]; $('ov-btn2').textContent = secondary[0]; $('ov-keys').textContent = keys;
   ovActions = [primary[1], secondary[1]];
@@ -1428,6 +1429,13 @@ function classesOf(p) {
   return list.filter(c => c && c.code).slice(0, 3);
 }
 const classNames = p => classesOf(p).map(c => c.name).join(' · ');
+/* MTG_CLASSSWITCH: a student can save up to 3 classes (p.saved) but only ONE is active (p.classes = [active]); scores, practice and tests count for the active class */
+const savedOf = p => { if (!p) return []; const l = Array.isArray(p.saved) && p.saved.length ? p.saved : classesOf(p); return l.filter(c => c && c.code).slice(0, 3); };
+const prefillOf = p => { const s = savedOf(p); return p ? [...s.filter(c => c.code === p.classCode), ...s.filter(c => c.code !== p.classCode)] : []; };
+function switchClass(code) { const p = getProfile(), s = savedOf(p), c = s.find(x => x.code === code); if (!p || !c) return; setProfile({ ...p, classCode: c.code, className: c.name || c.code, classOwner: c.owner || '', classes: [c], saved: s }); location.reload(); }
+const switchHTML = p => { const s = savedOf(p); return s.length > 1 ? `<div id="ov-sw" role="group" aria-label="Switch class" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:12px 0 4px">${s.map(c => `<button type="button" class="btn${c.code === p.classCode ? ' primary' : ''}" data-switch-class="${c.code.replace(/[^A-Za-z0-9]/g, '')}" aria-pressed="${c.code === p.classCode}">${String(c.name || c.code).replace(/[<>&"]/g, '')}${c.code === p.classCode ? ' ✓' : ''}</button>`).join('')}</div>` : ''; };
+document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-switch-class]'); if (b) switchClass(b.dataset.switchClass); });
+/* /MTG_CLASSSWITCH */
 function updateWho() {
   const p = getProfile();
   $('who-btn').innerHTML = p ? `${iconHTML(iconOf(p)) || '👤'} ${esc(displayName(p))}${p.classCode ? ' · ' + esc(classNames(p)) : ''}` : isGuest() ? '👤 Guest (sign in)' : '👤 Sign in';
@@ -1553,7 +1561,7 @@ function addCodeBox(v) {
 }
 function syncAddBtn() { $('w-add').hidden = $('w-more').children.length >= 2; $('w-add').disabled = $('w-solo').checked; }
 function showWelcome(keep) {
-  const p = keep ? getProfile() : null, cs = classesOf(p);
+  const p = keep ? getProfile() : null, cs = prefillOf(p);
   setPickedIcon(p && p.icon);
   $('w-first').value = p ? p.first : ''; $('w-init').value = p ? p.init : ''; $('w-code').value = cs.length ? cs[0].code : '';
   $('w-solo').checked = !!(p && !p.classCode); $('w-code').disabled = $('w-solo').checked; $('w-error').textContent = '';
@@ -1585,17 +1593,17 @@ async function submitWelcome(e) {
     finally { $('w-go').disabled = false; $('w-go').textContent = 'Set sail'; }
   }
   const main = classes[0] || { code: '', name: '', owner: '' };
-  setProfile({ first, init, classCode: main.code, className: main.name, classOwner: main.owner, classes, icon: pickedIcon() });
+  setProfile({ first, init, classCode: main.code, className: main.name, classOwner: main.owner, classes: classes.slice(0, 1), saved: classes, icon: pickedIcon() });
   $('welcome').hidden = true; updateWho(); syncSaveBox();
 }
 function playAsGuest() { try { sessionStorage.setItem(GUEST_KEY, '1'); } catch {} $('welcome').hidden = true; updateWho(); syncSaveBox(); }
 // re-reads every class: keeps the ones that still exist (fresh name/owner/assignment), drops deleted ones
 async function refreshClass() {
-  const p = getProfile(), cs = classesOf(p); if (!cs.length) return;
+  const p = getProfile(), cs = savedOf(p); if (!cs.length) return;
   try {
     const { fs, db } = await fb(), docs = await wait(Promise.all(cs.map(c => fs.getDoc(fs.doc(db, 'classes', c.code)))));
-    const kept = docs.filter(d => d.exists()).map(d => ({ code: d.id, name: d.data().name, owner: d.data().ownerEmail || '' })), main = kept[0];
-    setProfile({ ...p, classCode: main ? main.code : '', className: main ? main.name : '', classOwner: main ? main.owner : '', classes: kept });
+    const kept = docs.filter(d => d.exists()).map(d => ({ code: d.id, name: d.data().name, owner: d.data().ownerEmail || '' })), main = kept.find(c => c.code === p.classCode) || kept[0];
+    setProfile({ ...p, classCode: main ? main.code : '', className: main ? main.name : '', classOwner: main ? main.owner : '', classes: main ? [main] : [], saved: kept });
     classAssigns = Object.fromEntries(docs.filter(d => d.exists()).map(d => [d.id, d.data().tidal_assignment || null]));
     classAssign = main ? classAssigns[main.code] : null;
     updateWho(); renderAssignment();
@@ -3284,6 +3292,7 @@ function showOverlayWho(p) {
   if (view() === 'game' && game.running && !game.paused) pause(true);
   showOverlay('Who\'s at the helm', displayName(p), p.classCode ? `Class: ${classesOf(p).map(c => `${c.name} (code ${c.code})`).join(' · ')}` : 'Not in a class: posting to the World board only.',
     ['Switch student', () => { $('overlay').hidden = true; showWelcome(false); }], ['Change class', () => { $('overlay').hidden = true; showWelcome(true); }], '');
+  $('ov-text').insertAdjacentHTML('afterend', switchHTML(p));
 }
 
 addEventListener('keydown', e => {
