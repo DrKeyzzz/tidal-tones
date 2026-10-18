@@ -428,6 +428,9 @@ html[data-skin="day"] .icon-pick button .ic-svg { color: var(--moon); }
 .skin-pick .sw::before { content: ""; position: absolute; left: 0; right: 0; top: 30%; height: 1px; background: var(--c); opacity: .6; box-shadow: 0 6px 0 var(--c); }
 .skin-pick .sw::after { content: ""; position: absolute; left: 56%; top: 30%; width: 12px; height: 9px; border-radius: 50%; background: var(--c); transform: rotate(-20deg); box-shadow: -34px -8px 0 -2px var(--b); }
 @media (max-width: 560px) { .skin-pick { gap: 6px; } .skin-pick small { display: none; } }
+
+/* "✉ Messages" link to the All games dashboard (added 2026-10-18) */
+.mtg-msgn{display:inline-block;min-width:18px;margin-left:6px;padding:1px 5px 0;border-radius:999px;background:#c0392b;color:#fff;font:700 11px/1.4 system-ui,sans-serif;letter-spacing:0;text-align:center;vertical-align:middle}
 </style>
 <style>
 /* Music Theory Games home link: the same in every game, on its own row at the top left of the header */
@@ -669,7 +672,7 @@ html[data-skin="day"] .mtg-hint { box-shadow: 0 8px 20px -8px rgba(20,40,80,.35)
   <section class="card teacher teacher-only" id="teacher">
     <div class="board-head">
       <h2>Teacher dashboard</h2>
-      <div class="row"><span class="dim" id="td-who"></span><button class="btn ghost sm" id="td-signout" type="button" hidden>Sign out</button><button class="btn ghost sm" id="td-back" type="button">Back to harbor</button></div>
+      <div class="row"><span class="dim" id="td-who"></span><button class="btn ghost sm" id="td-msgs" type="button" hidden title="Messages with Mr. Milnes (opens the All games dashboard)" onclick="window.open('https://drkeyzzz.github.io/teacher/all/#messages', '_blank', 'noopener')">✉ Messages<span class="mtg-msgn" id="td-msgn" hidden></span></button><button class="btn ghost sm" id="td-signout" type="button" hidden>Sign out</button><button class="btn ghost sm" id="td-back" type="button">Back to harbor</button></div>
     </div>
     <div class="td-gate" id="td-gate"></div>
     <div id="td-main" hidden>
@@ -2996,7 +2999,7 @@ function tdMsg(text, ok) { const e = $('td-msg'); e.textContent = text || ''; e.
 
 function openTeacher() { if (view() === 'game') return; goTo('teacher', tdStart); }
 async function tdStart() {
-  $('td-main').hidden = true; $('td-signout').hidden = true; $('td-who').textContent = '';
+  $('td-main').hidden = true; $('td-signout').hidden = true; $('td-msgs').hidden = true; $('td-who').textContent = '';
   $('td-gate').innerHTML = '<p>Loading…</p>';
   try {
     const { auth, authMod } = await fbAuth();
@@ -3025,7 +3028,20 @@ async function tdSignedIn(email) {
   if (!ok) return tdRequestScreen(email);
   TD.email = email; $('td-gate').hidden = true; $('td-main').hidden = false;
   $('td-admin-tab').hidden = !ADMIN_EMAILS.includes(email);
+  tdMsgCount();
   await tdLoadClasses(); tdRender();
+}
+// "✉ Messages" opens the All games dashboard's Messages tab; the red number is this teacher's unread messages from
+// Mr. Milnes (one read of teacher_threads/<email>; the admin: one query of teacher_threads). Added 2026-10-18.
+async function tdMsgCount() {
+  const a = $('td-msgs'), n0 = $('td-msgn'); if (!a) return; a.hidden = false; let n = 0;
+  try {
+    n = await run(async ({ fs, db }) => ADMIN_EMAILS.includes(TD.email)
+      ? (await fs.getDocs(fs.collection(db, 'teacher_threads'))).docs.reduce((s, d) => s + (+d.data().unread_admin || 0), 0)
+      : +(((await fs.getDoc(fs.doc(db, 'teacher_threads', TD.email))).data() || {}).unread_teacher) || 0);
+  } catch (e) { n = 0; }
+  n0.textContent = n > 99 ? '99+' : String(n); n0.hidden = !n;
+  a.setAttribute('aria-label', n ? `Messages, ${n} unread` : 'Messages with Mr. Milnes (opens the All games dashboard)');
 }
 // someone who isn't a teacher yet can ask for access; the admin approves it in the Admin tab of any game's dashboard
 async function tdRequestScreen(email) {
