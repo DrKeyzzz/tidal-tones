@@ -181,6 +181,9 @@ body[data-view="game"] #board-btn { display: none; }
 @keyframes flick { 0%, 100% { transform: none; } 30% { transform: scale(1.35); } }
 .iconbtn { font: 600 12px var(--f-ui); letter-spacing: .1em; text-transform: uppercase; color: var(--mist); background: var(--tide); border: 1px solid var(--rope); border-radius: 999px; padding: 8px 12px 6px; cursor: pointer; }
 .iconbtn:hover { color: var(--moon); }
+.instr-game { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px 4px 10px; }
+.instr-game select, .instr select { font: 600 13px var(--f-ui); color: var(--moon); background: var(--deep); border: 1px solid var(--rope); border-radius: 999px; padding: 4px 8px; max-width: 170px; letter-spacing: 0; text-transform: none; }
+.instr { margin-bottom: 12px; }
 
 /* ---------- teacher dashboard ---------- */
 .teacher { gap: 16px; }
@@ -451,6 +454,89 @@ html[data-skin="day"] .mtg-hint { box-shadow: 0 8px 20px -8px rgba(20,40,80,.35)
 .mtg-hint { --hint-bg: var(--tide-2); --hint-ink: var(--moon); --hint-edge: var(--rope); }
 .devtag { display: inline-block; font: 700 10px var(--f-ui, sans-serif); letter-spacing: .12em; padding: 3px 6px 1px; margin-left: 6px; border-radius: 999px; background: var(--lamp, #ffc45c); color: var(--deep, #0c1a24); vertical-align: middle; }
 </style>
+<!-- MTG_SOUND start: identical in every game. Master copy: Music Games/shared/mtg-sound.snippet.js (install with apply-sound.py) -->
+<script id="mtg-sound">
+/* MTG_SOUND: the shared instrument sound engine (identical in every game; master: Music Games/shared/mtg-sound.snippet.js,
+   install with shared/apply-sound.py). window.MTGSound:
+     list() -> [{key,name}]   get() / set(key) (localStorage mtg_sound_v1, fires 'mtgsound' on window)
+     ctx(audioContext)  out(node)  preload(lo, hi) -> Promise  note(midi, when, dur, vel = 90, dest)
+   Recordings: Salamander Grand + tonejs-instruments (CC BY 3.0), vibraphone from VCSL (CC0, hosted on drkeyzzz.github.io/sounds). */
+(function () {
+  var KEY = 'mtg_sound_v1', SAL = 'https://tonejs.github.io/audio/salamander/', TJI = 'https://nbrosowsky.github.io/tonejs-instruments/samples/';
+  var VIB = location.hostname === 'localhost' ? '/hub/sounds/vibes/' : 'https://drkeyzzz.github.io/sounds/vibes/';
+  var NIX = { C: 0, Cs: 1, D: 2, Ds: 3, E: 4, F: 5, Fs: 6, G: 7, Gs: 8, A: 9, As: 10, B: 11 };
+  function toMidi(n) { var p = n.match(/^([A-G]s?)(\d)$/); return 12 * (+p[2] + 1) + NIX[p[1]]; }
+  function SET(base, names) { return names.split(' ').map(function (n) { return { m: toMidi(n), url: base + n + '.mp3' }; }); }
+  var SOUNDS = [
+    { key: 'epiano', name: 'Soft electric piano' },
+    { key: 'piano', name: 'Grand piano', samples: SET(SAL, 'A1 C2 Ds2 Fs2 A2 C3 Ds3 Fs3 A3 C4 Ds4 Fs4 A4 C5 Ds5 Fs5 A5 C6'), decay: 1.2 },
+    { key: 'strings', name: 'Strings', samples: SET(TJI + 'cello/', 'C2 D2 E2 F2 G2 A2 B2 C3 D3 E3 F3 G3').concat(SET(TJI + 'violin/', 'A3 C4 E4 G4 A4 C5 E5 G5 A5 C6')), attack: .09, release: .45, gain: 1.7 },
+    { key: 'flute', name: 'Flute', samples: SET(TJI + 'flute/', 'C4 E4 A4 C5 E5 A5 C6 E6 A6'), attack: .05, release: .3, gain: 1.6 },
+    { key: 'vibes', name: 'Vibraphone', samples: SET(VIB, 'F2 A2 C3 E3 B3 D4 A4 C5 E5'), decay: 1.2, gain: 1.3 }
+  ];
+  var BY = {}; SOUNDS.forEach(function (s) { BY[s.key] = s; });
+  var A = null, OUT = null, bus = null, BUFS = {}, LOADING = {}, NORM = {};
+  function ac() {
+    if (!A) A = new (window.AudioContext || window.webkitAudioContext)();
+    if (!bus) {   // dry + a small room reverb, into the game's output (or the speakers)
+      bus = A.createGain(); var wet = A.createGain(), rev = A.createConvolver(), len = Math.floor(A.sampleRate * 1.6), ir = A.createBuffer(2, len, A.sampleRate);
+      for (var ch = 0; ch < 2; ch++) { var d = ir.getChannelData(ch), lp = 0; for (var i = 0; i < len; i++) { var k = i / len; lp = lp * (.2 + .75 * k) + (Math.random() * 2 - 1) * (1 - (.2 + .75 * k)); d[i] = lp * Math.pow(1 - k, 2.2); } }
+      rev.buffer = ir; wet.gain.value = .18; bus.connect(OUT || A.destination); bus.connect(rev); rev.connect(wet); wet.connect(OUT || A.destination);
+      bus._wet = wet;
+    }
+    if (A.state === 'suspended') A.resume();
+    return A;
+  }
+  function cur() { var k = null; try { k = localStorage.getItem(KEY); } catch (e) {} return BY[k] ? k : 'epiano'; }
+  function load(s) {
+    var c = ac();
+    return BUFS[s.url] ? Promise.resolve() : LOADING[s.url] || (LOADING[s.url] = fetch(s.url).then(function (r) { if (!r.ok) throw 0; return r.arrayBuffer(); })
+      .then(function (b) { return new Promise(function (ok, no) { c.decodeAudioData(b, ok, no); }); })
+      .then(function (buf) { var d = buf.getChannelData(0), p = 0; for (var i = 0; i < d.length; i += 16) p = Math.max(p, Math.abs(d[i])); NORM[s.url] = .6 / Math.max(p, .05); BUFS[s.url] = buf; })
+      .catch(function () { delete LOADING[s.url]; }));
+  }
+  function nearest(S, m, loadedOnly) { var b = null; S.samples.forEach(function (s) { if (loadedOnly && !BUFS[s.url]) return; if (!b || Math.abs(s.m - m) < Math.abs(b.m - m)) b = s; }); return b; }
+  function hz(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+  function epiano(c, m, t, dur, peak, lp) {   // the built-in soft electric piano (2-operator FM)
+    var g = c.createGain(), car = c.createOscillator(), mod = c.createOscillator(), mg = c.createGain(); lp.connect(g);
+    car.frequency.value = hz(m); mod.frequency.value = hz(m) * 2;
+    mg.gain.setValueAtTime(hz(m) * 1.2, t); mg.gain.exponentialRampToValueAtTime(hz(m) * .05, t + 1.2); mod.connect(mg); mg.connect(car.frequency); car.connect(lp);
+    g.gain.setValueAtTime(peak * .55, t); g.gain.exponentialRampToValueAtTime(peak * .2, t + .5); g.gain.setValueAtTime(peak * .2, t + dur); g.gain.exponentialRampToValueAtTime(.0005, t + dur + .5);
+    car.start(t); mod.start(t); car.stop(t + dur + .55); mod.stop(t + dur + .55); return g;
+  }
+  window.MTGSound = {
+    list: function () { return SOUNDS.map(function (s) { return { key: s.key, name: s.name }; }); },
+    get: cur,
+    set: function (k) { if (!BY[k]) return; try { localStorage.setItem(KEY, k); } catch (e) {} try { window.dispatchEvent(new CustomEvent('mtgsound', { detail: k })); } catch (e) {} },
+    ctx: function (c) { if (c && c !== A) { A = c; bus = null; } return ac(); },
+    out: function (node) { OUT = node || null; bus = null; },
+    preload: function (lo, hi) {
+      var S = BY[cur()]; if (!S.samples) return Promise.resolve();
+      lo = lo == null ? 48 : lo; hi = hi == null ? 84 : hi;
+      var want = S.samples.filter(function (s) { return s.m >= lo - 5 && s.m <= hi + 17; });
+      [lo, hi].forEach(function (m) { var n = nearest(S, m); if (want.indexOf(n) < 0) want.push(n); });
+      return Promise.all(want.map(load));
+    },
+    note: function (midi, when, dur, vel, dest) {
+      var c = ac(), S = BY[cur()], v = (vel == null ? 90 : vel) / 127, peak = .9 * v * v, t = Math.max(when || 0, c.currentTime);
+      var lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = .5; lp.frequency.value = 900 + Math.pow(Math.min(v, 1), 1.6) * 11000;
+      var s = S.samples && nearest(S, midi, true);
+      if (S.samples && (!s || Math.abs(s.m - midi) > 7)) { var n = nearest(S, midi); if (!BUFS[n.url]) load(n); s = null; }
+      var g;
+      if (!s) g = epiano(c, midi, t, dur, peak, lp);   // built-in, or samples not here yet: never silent
+      else {
+        g = c.createGain(); lp.connect(g);
+        var src = c.createBufferSource(); src.buffer = BUFS[s.url]; src.playbackRate.value = Math.pow(2, (midi - s.m) / 12); src.connect(lp);
+        var pk = peak * NORM[s.url] * (S.gain || 1);
+        if (S.decay) { g.gain.setValueAtTime(pk, t); g.gain.setValueAtTime(pk, t + dur); g.gain.exponentialRampToValueAtTime(.0005, t + dur + S.decay); src.start(t); src.stop(t + dur + S.decay + .05); }
+        else { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(pk, t + S.attack); g.gain.setValueAtTime(pk, t + dur); g.gain.exponentialRampToValueAtTime(.0005, t + dur + S.release); src.start(t); src.stop(t + dur + S.release + .05); }
+      }
+      g.connect(dest || bus);
+    }
+  };
+})();
+</script>
+<!-- MTG_SOUND end -->
 </head>
 <body>
 
@@ -483,6 +569,7 @@ html[data-skin="day"] .mtg-hint { box-shadow: 0 8px 20px -8px rgba(20,40,80,.35)
       <button class="iconbtn who" id="who-btn" type="button">👤 Sign in</button>
       <button class="iconbtn" id="midi-btn" type="button" data-state="off" aria-describedby="midi-note"><i></i><span id="midi-label">MIDI keyboard</span></button>
       <button class="iconbtn" id="board-btn" type="button">Leaderboard</button>
+      <label class="iconbtn instr-game" title="Change the instrument the notes play on">🎵 <select id="instr-game" aria-label="Instrument"></select></label>
       <button class="iconbtn" id="sound-btn" type="button" aria-pressed="true">Sound on</button>
       <button class="iconbtn" id="teacher-btn" type="button">Teacher Dashboard</button>
     </div>
@@ -552,6 +639,10 @@ html[data-skin="day"] .mtg-hint { box-shadow: 0 8px 20px -8px rgba(20,40,80,.35)
         <button type="button" role="tab" data-tab="keys" id="tab-keys" aria-controls="panel-keys" aria-selected="false">Keys &amp; intervals</button>
       </div>
       <div class="mpanel" data-panel="staff" id="panel-staff" role="tabpanel" aria-labelledby="tab-staff">
+        <fieldset class="instr">
+          <legend><label for="instr">Instrument</label></legend>
+          <select id="instr"></select>
+        </fieldset>
         <fieldset>
           <legend>Clef</legend>
           <div class="seg">
@@ -1117,7 +1208,7 @@ function nameOf(n, withOct = true) {
 
 /* ---------- audio ---------- */
 let actx = null;
-function ensureAudio() { try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch {} }
+function ensureAudio() { try { if (!actx) { actx = new (window.AudioContext || window.webkitAudioContext)(); MTGSound.ctx(actx); } if (actx.state === 'suspended') actx.resume(); } catch {} }
 function tone(f, dur = .45, type = 'triangle', vol = .2, slideTo, attack = .012) {
   if (!settings.sound || !actx) return;
   const t = actx.currentTime, o = actx.createOscillator(), gn = actx.createGain();
@@ -1126,7 +1217,10 @@ function tone(f, dur = .45, type = 'triangle', vol = .2, slideTo, attack = .012)
   gn.gain.setValueAtTime(.0001, t); gn.gain.exponentialRampToValueAtTime(vol, t + attack); gn.gain.exponentialRampToValueAtTime(.0001, t + dur);
   o.connect(gn).connect(actx.destination); o.start(t); o.stop(t + dur + .03);
 }
-function buoyBell(f) { tone(f, 1.1, 'sine', .22); tone(f * 2.76, .45, 'sine', .04); tone(f, .3, 'triangle', .07); }
+// Musical notes go through the shared instrument engine (MTGSound, More options > Instrument); effect sounds stay synth.
+function buoyBell(m) { if (!settings.sound || !actx) return; MTGSound.note(m, actx.currentTime, .8, 100); }
+const soundRange = () => settings.clef === 'bass' ? [36, 67] : settings.clef === 'alto' ? [45, 77] : [55, 84];
+function preloadSound() { ensureAudio(); return actx ? MTGSound.preload(...soundRange()) : Promise.resolve(); }
 // half a light: a soft fizzle as the flame gutters
 function fizzle() {
   if (!settings.sound || !actx) return;
@@ -1362,7 +1456,7 @@ const bestKey = () => ['harborlights', newbieOn() ? 'newbie' : '', settings.mode
 function startGame() {
   if (window.MTGTest && !MTGTest.canStart()) return;
   nbStreak = {}; nbFlash = {};
-  ensureAudio();
+  ensureAudio(); preloadSound();
   Object.assign(game, { running: true, paused: false, over: false, score: 0, level: 1, hits: 0, wrong: 0, lost: 0, streak: 0, bestStreak: 0, lamps: 6, pace: 1, recent: [], time: 60, elapsed: 0, lock: 0, stats: {} });
   notes = []; homeward = []; floaters = []; particles = []; rightMarks = []; spawnT = .5; lastPick = null; drillHist = [];
   $('overlay').hidden = true; $('results').hidden = true;
@@ -2079,9 +2173,9 @@ function guideHome(n, withSound) {
   }
   if (withSound) {
     if (n.kind === 'ivl') {
-      const f1 = freq(n), f2 = midiFreq(midiOf({ d: n.d2, acc: n.acc2 }));
+      const f1 = midiOf(n), f2 = midiOf({ d: n.d2, acc: n.acc2 });
       buoyBell(f1); setTimeout(() => buoyBell(f2), 320); setTimeout(() => { buoyBell(f1); buoyBell(f2); }, 700);
-    } else buoyBell(freq(n));
+    } else buoyBell(midiOf(n));
   }
 }
 
@@ -2211,7 +2305,7 @@ function settle(n, ok, guessText) {
     floaters.push({ x: noteX(n), y: yOf(n.staff, n.kind === 'ivl' ? Math.max(n.p, n.p2) : n.p) - 1.8 * g, text: '✗ Not ' + guessText + ' — it\u2019s ' + right, color: C.flare, life: 1.1, max: 1.1 });
     showRight(n, .9);
     if (settings.mode !== 'arcade') tone(150, .2, 'triangle', .08, 120);
-    setTimeout(() => { if (n.kind === 'ivl') { buoyBell(freq(n)); buoyBell(midiFreq(midiOf({ d: n.d2, acc: n.acc2 }))); } else buoyBell(freq(n)); }, 180);
+    setTimeout(() => { if (n.kind === 'ivl') { buoyBell(midiOf(n)); buoyBell(midiOf({ d: n.d2, acc: n.acc2 })); } else buoyBell(midiOf(n)); }, 180);
   }
   hud();
 }
@@ -2958,6 +3052,10 @@ $('settings').addEventListener('change', e => {
   if (e.target.name === 'level') applyLevel(e.target.value);
   drill = null; applySettings();
 });
+['instr', 'instr-game'].forEach(id => { $(id).innerHTML = MTGSound.list().map(o => `<option value="${o.key}">${o.name}</option>`).join('');
+  $(id).value = MTGSound.get();
+  $(id).addEventListener('change', e => { e.stopPropagation(); MTGSound.set($(id).value); }); });   // one picker in More options, one in the top bar
+window.addEventListener('mtgsound', () => { $('instr').value = $('instr-game').value = MTGSound.get(); preloadSound().then(() => buoyBell(60)); });
 $('sound-btn').addEventListener('click', () => { settings.sound = !settings.sound; ensureAudio(); syncSound(); store.set('harborlights:settings', settings); });
 $('pause-btn').addEventListener('click', e => { e.stopPropagation(); if (view() === 'game') pause(true); });
 $('ov-btn').addEventListener('click', () => ovActions[0]?.());
