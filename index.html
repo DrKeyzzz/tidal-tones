@@ -1906,7 +1906,10 @@ async function devPost(name, getAuth, signIn) {
 }
 // Every developer score in a collection (merged into class boards).
 async function devRows(fs, db, col, extra = []) {
-  try { return (await fs.getDocs(fs.query(fs.collection(db, col), fs.where('dev', '==', true), ...extra))).docs; } catch (e) { return []; }
+  // only the developer's 10 best (needs a dev + score index; until it exists, any 10 so a board never reads them all)
+  try { return (await fs.getDocs(fs.query(fs.collection(db, col), fs.where('dev', '==', true), ...extra, fs.orderBy('score', 'desc'), fs.limit(10)))).docs; }
+  catch (e) { if (e.code === 'failed-precondition') console.warn('[index needed]', e.message); }
+  try { return (await fs.getDocs(fs.query(fs.collection(db, col), fs.where('dev', '==', true), ...extra, fs.limit(10)))).docs; } catch (e) { return []; }
 }
 // Boards read only the 60 best runs for the chosen mode (and difficulty), class or world; clef and answer style are filtered here.
 // Every run is still saved forever. Each result is kept a minute in memory so reopening or switching back costs no reads.
@@ -3266,7 +3269,7 @@ async function tdProgress(keep) {
       <input type="date" id="td-date" value="${TD.date}" ${TD.range === 'date' ? '' : 'hidden'} aria-label="Date">
       <button class="btn ghost sm" type="button" id="td-refresh">Refresh</button>
       <button class="btn ghost sm" type="button" id="td-csv" ${studs.length ? '' : 'disabled'}>Export CSV</button>
-      ${TD.range === 'today' ? '<span class="td-live">● Live · updates every 30 seconds</span>' : ''}
+      ${TD.range === 'today' ? '<span class="td-live">● Live · updates every 2 minutes</span>' : ''}
     </div>
     ${a ? `<p class="dim" style="margin:0">Assignment: <b>${esc(assignText(a))}</b>${a.goal ? ` · ${a.goal} boats` : ''}${a.minutes ? ` · ${a.minutes} min` : ''}</p>` : ''}
     <div class="td-tiles">
@@ -3298,7 +3301,7 @@ async function tdProgress(keep) {
     try { await run(async ({ fs, db }) => { const snap = await fs.getDocs(fs.query(fs.collection(db, 'tidal_progress'), fs.where('owner', '==', TD.email), fs.where('class_code', '==', TD.code))); const b = fs.writeBatch(db); snap.docs.filter(d => d.data().sid === st.sid).forEach(d => b.delete(d.ref)); await b.commit(); }); TD.open = null; tdProgress(); }
     catch (err) { tdMsg(tdErr(err)); }
   };
-  if (TD.range === 'today') TD.timer = setInterval(() => { if (!document.hidden && TD.tab === 'progress' && view() === 'teacher') tdProgress(true); }, 30000);
+  if (TD.range === 'today') TD.timer = setInterval(() => { if (!document.hidden && TD.tab === 'progress' && view() === 'teacher') tdProgress(true); }, 120000);
 }
 function tdStudentDetail(st) {
   const gameRows = Object.keys(GAME_TITLE).filter(g => st.byGame[g]).map(g => [GAME_TITLE[g], st.byGame[g]]);
