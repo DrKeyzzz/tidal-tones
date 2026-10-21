@@ -1245,47 +1245,24 @@ function noise(dur, type, freq, vol) {
 }
 function foghorn() { tone(73, .9, 'sawtooth', .09, 70, .15); tone(110, .9, 'sine', .05, 108, .15); }
 
-/* ---------- opening sound: waves, seagulls and a foghorn on the first tap, click or key of a visit ----------
-   Browsers only allow sound after the visitor does something, so it waits for that first gesture. */
-let introBus = null, introDone = false;
+/* ---------- opening sound: his "Grandma Aurora" voice-over over the game's sea, seagulls and foghorn (built in docs/sound/) ----------
+   Plays every time the page opens, or on the first tap, click or key if the browser blocks it. Never with sound off or in a test. */
+let introAudio = null, introDone = false;
 function playIntro() {
-  if (introDone) return; introDone = true;
-  try { if (sessionStorage.getItem('tidal_intro')) return; sessionStorage.setItem('tidal_intro', '1'); } catch {}
-  if (!settings.sound) return;
-  ensureAudio(); if (!actx) return;
-  const t = actx.currentTime + .05, bus = actx.createGain(); bus.connect(actx.destination); introBus = bus;
-  // the sea: soft brown noise through a low-pass filter, swelling twice
-  const len = Math.floor(actx.sampleRate * 5.5), buf = actx.createBuffer(1, len, actx.sampleRate), d = buf.getChannelData(0);
-  let last = 0; for (let i = 0; i < len; i++) { last = last * .97 + (Math.random() * 2 - 1) * .03; d[i] = last * 6; }
-  const sea = actx.createBufferSource(), lp = actx.createBiquadFilter(), sg = actx.createGain();
-  sea.buffer = buf; lp.type = 'lowpass'; lp.frequency.value = 500;
-  sg.gain.setValueAtTime(0, t); sg.gain.linearRampToValueAtTime(.16, t + 1.2); sg.gain.linearRampToValueAtTime(.09, t + 2.4);
-  sg.gain.linearRampToValueAtTime(.17, t + 3.6); sg.gain.linearRampToValueAtTime(0, t + 5.5);
-  sea.connect(lp).connect(sg).connect(bus); sea.start(t); sea.stop(t + 5.5);
-  // seagulls: quick rising-then-falling calls with a flutter
-  [[.4, 1300], [1.1, 1500], [1.45, 1250], [3.6, 1400], [4.2, 1550]].forEach(([dt, f]) => {
-    const t0 = t + dt, o = actx.createOscillator(), g2 = actx.createGain(), v = actx.createOscillator(), vg = actx.createGain();
-    o.type = 'triangle'; v.frequency.value = 28; vg.gain.value = 60; v.connect(vg).connect(o.frequency);
-    o.frequency.setValueAtTime(f * 1.5, t0); o.frequency.exponentialRampToValueAtTime(f * 2.1, t0 + .08); o.frequency.exponentialRampToValueAtTime(f, t0 + .42);
-    g2.gain.setValueAtTime(.0001, t0); g2.gain.exponentialRampToValueAtTime(.045, t0 + .04); g2.gain.exponentialRampToValueAtTime(.0001, t0 + .45);
-    o.connect(g2).connect(bus); o.start(t0); v.start(t0); o.stop(t0 + .5); v.stop(t0 + .5);
-  });
-  // the foghorn: a deep, warm blast
-  [[73, .16], [110, .07], [146, .03]].forEach(([f, vol]) => {
-    const t0 = t + .9, o = actx.createOscillator(), g3 = actx.createGain(), fl = actx.createBiquadFilter();
-    o.type = 'sawtooth'; o.frequency.value = f; fl.type = 'lowpass'; fl.frequency.value = 420;
-    g3.gain.setValueAtTime(.0001, t0); g3.gain.exponentialRampToValueAtTime(vol, t0 + .35); g3.gain.setValueAtTime(vol, t0 + 1.6); g3.gain.exponentialRampToValueAtTime(.0001, t0 + 2.4);
-    o.connect(fl).connect(g3).connect(bus); o.start(t0); o.stop(t0 + 2.5);
-  });
-  setTimeout(() => { if (introBus === bus) introBus = null; }, 6000);
+  if (introDone || !settings.sound || new URLSearchParams(location.search).has('test')) return;
+  try {
+    introAudio = introAudio || new Audio('sounds/tidal-intro.m4a'); introAudio.volume = .9;
+    const pr = introAudio.play(); if (pr) pr.then(() => { introDone = true; }).catch(() => {});
+  } catch {}
 }
-// starting a game fades the intro out so the game sounds aren't buried
+// starting a game (or turning sound off) fades the intro out so the game sounds aren't buried
 function fadeIntro() {
-  if (!introBus || !actx) return;
-  const gn = introBus.gain, now = actx.currentTime;
-  gn.cancelScheduledValues(now); gn.setValueAtTime(gn.value, now); gn.linearRampToValueAtTime(0, now + .6); introBus = null;
+  introDone = true;
+  const a = introAudio; if (!a || a.paused) return;
+  const t0 = performance.now(), v0 = a.volume;
+  (function step() { const k = Math.min(1, (performance.now() - t0) / 600); a.volume = v0 * (1 - k); if (k < 1) requestAnimationFrame(step); else a.pause(); })();
 }
-['pointerdown', 'keydown'].forEach(ev => addEventListener(ev, playIntro, { capture: true }));
+['pointerdown', 'keydown'].forEach(ev => addEventListener(ev, e => { if (!e.target.closest || !e.target.closest('#sound-btn')) playIntro(); }, { capture: true }));
 function tideUp() { tone(523, .25, 'sine', .08); setTimeout(() => tone(784, .4, 'sine', .08), 140); }
 
 /* ---------- game state ---------- */
@@ -3059,7 +3036,7 @@ $('settings').addEventListener('change', e => {
   $(id).value = MTGSound.get();
   $(id).addEventListener('change', e => { e.stopPropagation(); MTGSound.set($(id).value); }); });   // one picker in More options, one in the top bar
 window.addEventListener('mtgsound', () => { $('instr').value = $('instr-game').value = MTGSound.get(); preloadSound().then(() => buoyBell(60)); });
-$('sound-btn').addEventListener('click', () => { settings.sound = !settings.sound; ensureAudio(); syncSound(); store.set('harborlights:settings', settings); });
+$('sound-btn').addEventListener('click', () => { settings.sound = !settings.sound; ensureAudio(); syncSound(); store.set('harborlights:settings', settings); if (!settings.sound) fadeIntro(); });
 $('pause-btn').addEventListener('click', e => { e.stopPropagation(); if (view() === 'game') pause(true); });
 $('ov-btn').addEventListener('click', () => ovActions[0]?.());
 $('ov-btn2').addEventListener('click', () => ovActions[1]?.());
@@ -3541,6 +3518,7 @@ function boot(data) {
 }
 /* MTG_TEST setup */ MTGTest.setup({ game: 'tidal', hide: ["#who-btn", "#board-btn", "#teacher-btn"], apply: () => { applySettingsFromUrl(); }, start: () => { launch(); } }); /* /MTG_TEST setup */
 boot({});
+playIntro();   // the intro sound: try right away; if the browser says no, the first tap, click or key plays it
 /* ---------- Header hints (same in every Music Theory Game): hover, keyboard focus or long-press a header button to see what it does ---------- */
 function headerHints(HINTS) {
   const tip = document.createElement('div'); tip.className = 'mtg-hint'; tip.setAttribute('aria-hidden', 'true');
