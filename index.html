@@ -3304,6 +3304,8 @@ async function tdBoardCount(runner, msgCount) {
   b.classList.toggle('mtg-pulse', n > 0); m.classList.toggle('mtg-pulse', msgCount > 0);
 }
 // someone who isn't a teacher yet can ask for access; the admin approves it in the Admin tab of any game's dashboard
+/* Teachers with a school email (letters only before the @, on a k12.xx.us or .edu domain) join on their own; student addresses have numbers. Same check as schoolEmail() in the rules. */
+const schoolEmail = e => /^[a-z._-]+@([a-z0-9-]+[.])*(k12[.][a-z][a-z][.]us|edu)$/.test(e) && !/@.*stu/.test(e);
 async function tdRequestScreen(email) {
   $('td-gate').hidden = false;
   let req = null; try { req = await run(async ({ fs, db }) => { const d = await fs.getDoc(fs.doc(db, 'teacher_requests', email)); return d.exists() ? d.data() : null; }); } catch {}
@@ -3315,11 +3317,15 @@ async function tdRequestScreen(email) {
   $('td-gate').innerHTML = `<p><b>${esc(email)}</b> isn't a teacher account yet. Teachers can request access below. Students: ask your teacher for your class code instead.</p>
     <form id="tg-form"><label>Your name<input id="tg-name" maxlength="60" placeholder="Ms. Rivera"></label><label>School<input id="tg-school" maxlength="80"></label>
     <label>Note (optional)<input id="tg-note" maxlength="300" placeholder="What you teach"></label><p class="td-msg" id="tg-err"></p>
-    <div class="row"><button class="btn" type="submit">Request teacher access</button></div></form>`;
+    <div class="row"><button class="btn" type="submit">${schoolEmail(email) ? 'Start now' : 'Request teacher access'}</button></div></form>`;
   $('tg-form').onsubmit = async e => {
     e.preventDefault();
     const name = $('tg-name').value.trim(), school = $('tg-school').value.trim(), note = $('tg-note').value.trim();
     if (name.length < 2) { $('tg-err').textContent = 'Type your name.'; return; }
+    if (schoolEmail(email)) {
+      try { await run(({ fs, db }) => fs.setDoc(fs.doc(db, 'teachers', email), { name: name.slice(0, 60), school: school.slice(0, 80), approved_at: fs.serverTimestamp(), approved_by: 'self' })); return tdSignedIn(email); }
+      catch (err) { /* blocked by the admin: ask instead */ }
+    }
     try {
       await run(({ fs, db }) => fs.setDoc(fs.doc(db, 'teacher_requests', email), { email, name, school, note, created_at: fs.serverTimestamp() }));
       $('td-gate').innerHTML = `<p>Thanks, ${esc(name)}. You'll be able to open the Teacher dashboard once your request is approved. Sign in again then.</p>`;
