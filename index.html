@@ -2041,7 +2041,7 @@ const worldRow = (mode, diff) => d => { const r = d.data(), [clef, answer, names
   return { id: d.id, path: d.ref.path, world: true, name: r.nick, icon: r.icon || '', score: r.score, acc: r.acc, mode, diff, clef, answer, names, at: r.created_at && r.created_at.toDate ? r.created_at.toDate().toISOString() : new Date().toISOString() }; };
 // Boards read only the 60 best runs for the chosen mode (and difficulty), class or world; clef and answer style are filtered here.
 // Every run is still saved forever. Each result is kept a minute in memory so reopening or switching back costs no reads.
-const BOARD_N = 60, BOARD_TTL = 60000, boardCache = new Map(), noIndex = new Set();
+const BOARD_N = 60, BOARD_TTL = 600000, boardCache = new Map(), noIndex = new Set();
 // scope: 'world', 'class' (the main class) or 'class:<code>' (one of the student's classes)
 function scopeCode(scope) {
   const cs = classesOf(getProfile()), c = scope === 'class' ? (cs[0] || {}).code : String(scope).startsWith('class:') ? scope.slice(6) : '';
