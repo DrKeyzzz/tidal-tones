@@ -3388,7 +3388,7 @@ async function tdProgress(keep) {
   const body = $('td-body');
   if (!keep) body.innerHTML = '<p class="dim">Loading progress…</p>';
   const LOAD = (code, day) => run(async ({ fs, db }) => (await fs.getDocs(fs.query(fs.collection(db, 'tidal_progress'), fs.where('owner', '==', TD.email), fs.where('class_code', '==', code), ...(day ? [fs.where('date', '==', day)] : [])))).docs.map(d => d.data()));
-  try { TD.docs = keep && TD.range === 'today' && TD.docsCode === TD.code ? TD.docs.filter(d => d.date !== dayKey()).concat((await LOAD(TD.code, dayKey())).filter(d => d.date === dayKey())) : await LOAD(TD.code); TD.docsCode = TD.code; tdMsg(''); }
+  try { /* one day reads only that day; a refresh or sort re-reads only today's docs */ const rk = TD.code + '|' + TD.range + '|' + TD.date, day = {today: dayKey(), yesterday: daysAgo(1), week: ''}[TD.range] ?? TD.date; TD.docs = keep && TD.docsKey === rk ? (TD.range === 'today' || TD.range === 'week' ? TD.docs.filter(d => d.date !== dayKey()).concat((await LOAD(TD.code, dayKey())).filter(d => d.date === dayKey())) : TD.docs) : await LOAD(TD.code, day || undefined); TD.docsKey = rk; tdMsg(''); }
   catch (e) { tdMsg(tdErr(e)); TD.docs = []; }
   const studs = mergeDocs(rangeDocs()), k = TD.sort.key, dir = TD.sort.dir;
   studs.sort((a, b) => (k === 'student' ? String(a.student).localeCompare(String(b.student)) : (a[k] - b[k])) * dir);
@@ -3449,6 +3449,7 @@ async function tdProgress(keep) {
     try { await run(async ({ fs, db }) => { const snap = await fs.getDocs(fs.query(fs.collection(db, 'tidal_progress'), fs.where('owner', '==', TD.email), fs.where('class_code', '==', TD.code))); const b = fs.writeBatch(db); snap.docs.filter(d => d.data().sid === st.sid).forEach(d => b.delete(d.ref)); await b.commit(); }); TD.open = null; tdProgress(); }
     catch (err) { tdMsg(tdErr(err)); }
   };
+  clearInterval(TD.timer); // one timer only (each refresh used to add another)
   if (TD.range === 'today') TD.timer = setInterval(() => { if (!document.hidden && TD.tab === 'progress' && view() === 'teacher') tdProgress(true); }, 120000);
 }
 function tdStudentDetail(st) {
