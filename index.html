@@ -2030,22 +2030,11 @@ async function devRows(fs, db, col, extra = []) {
   try { return (await fs.getDocs(fs.query(fs.collection(db, col), fs.where('dev', '==', true), ...extra, fs.limit(10)))).docs; } catch (e) { return []; }
 }
 // PRIVACY (2026-10-26): a score with a name is saved inside its class (classes/<code>/tidal_scores), so reading it needs the code.
-// The World board reads world_scores/tidal_<mode>_<diff>/runs: only a random game name (like "Blue Trumpet 42"), the score,
+// The World board reads world_scores/tidal_<mode>_<diff>/runs: the student's first name and last initial, the score,
 // accuracy, icon and "clef answer names" in level. The developer's runs (Maestro) stay in the old top level collection.
 const TIDAL_DIFFS = ['easy', 'medium', 'hard', 'expert', 'custom'];
-const NICK_KEY = 'mtg_nick_v1', NICK_RE = /^[A-Z][a-z]+ [A-Z][a-z]+ [0-9]{1,2}$/;
-const NICK_COLORS = ['Blue', 'Red', 'Green', 'Gold', 'Silver', 'Purple', 'Orange', 'Teal', 'Coral', 'Indigo', 'Amber', 'Jade', 'Ruby', 'Violet', 'Crimson', 'Azure'];
-const NICK_THINGS = ['Trumpet', 'Violin', 'Cello', 'Flute', 'Tuba', 'Oboe', 'Harp', 'Piano', 'Drum', 'Banjo', 'Sax', 'Clarinet', 'Bassoon', 'Viola', 'Guitar', 'Marimba', 'Ukulele', 'Trombone', 'Piccolo', 'Horn'];
-let NICK = '';
-// This device's World name, made once and kept (shared by every game on the site).
-function myNick() {
-  if (NICK) return NICK;
-  try { const n = localStorage.getItem(NICK_KEY); if (n && NICK_RE.test(n)) return NICK = n; } catch (e) {}
-  const pick = a => a[Math.floor(Math.random() * a.length)];
-  NICK = `${pick(NICK_COLORS)} ${pick(NICK_THINGS)} ${1 + Math.floor(Math.random() * 99)}`;
-  try { localStorage.setItem(NICK_KEY, NICK); } catch (e) {}
-  return NICK;
-}
+// The World board shows the student's own first name and last initial, like the class boards (David, 2026-10-29: no random game names).
+function myNick() { try { const p = JSON.parse(localStorage.getItem('rdt_profile_v1') || 'null'); return p && p.first && p.init ? `${p.first.charAt(0).toUpperCase()}${p.first.slice(1)} ${p.init}.` : ''; } catch (e) { return ''; } }
 const classCol = (fs, db, code) => fs.collection(db, 'classes', code, 'tidal_scores');
 const worldCol = (fs, db, mode, diff) => fs.collection(db, 'world_scores', `tidal_${mode}_${diff}`, 'runs');
 const worldRow = (mode, diff) => d => { const r = d.data(), [clef, answer, names] = String(r.level || '').split(' ');
@@ -2090,7 +2079,7 @@ async function fetchRows(scope, f) {
   res.min = res.rows.reduce((m, r) => !r.dev && typeof r.score === 'number' && r.score < m ? r.score : m, Infinity); res.t = Date.now();
   boardCache.set(key, res); return res;
 }
-// a just-posted run goes straight into every cached board it belongs on (the World copy carries the game name)
+// a just-posted run goes straight into every cached board it belongs on (the World copy carries the student's name)
 function boardAdd(row, wrow) {
   for (const [k, c] of boardCache) {
     const [, sc, code, mode, diff] = k.split('|'), r = sc === 'world' ? wrow : row;
@@ -2177,7 +2166,7 @@ function syncSaveBox(fresh) {
   if (box.hidden || savedRunId) return;
   // signed-in players' scores post automatically; the button only appears if a post fails, or to sign in
   if (p) {
-    $('save-who').textContent = `Posting as ${displayName(p)}${p.classCode ? ' to ' + classNames(p) + ` and the World board as ${myNick()}` : ` to the World board as ${myNick()}`}.`;
+    $('save-who').textContent = `Posting as ${displayName(p)}${p.classCode ? ' to ' + classNames(p) + ' and the World board' : ' to the World board'}.`;
     btn.textContent = 'Try again'; btn.onclick = saveRun; btn.hidden = true;
     if (fresh || !lastRun.wasGuest) {
       if (lastRun.hits > 0) saveRun();
@@ -2210,7 +2199,7 @@ async function saveRun() {
       wrow = { ...data, world: true, name: w.nick, id: wref.id, created_at: null, at: new Date().toISOString() };
       if (refs.length) data.class_code = codes[0];
     }
-    $('save-who').textContent = `Posted as ${displayName(p)}${p.classCode ? ' to ' + classNames(p) + ` and the World board as ${myNick()}` : ` to the World board as ${myNick()}`}.`;
+    $('save-who').textContent = `Posted as ${displayName(p)}${p.classCode ? ' to ' + classNames(p) + ' and the World board' : ' to the World board'}.`;
     const f = { mode: lastRun.mode, diff: lastRun.diff, clef: lastRun.clef, answer: lastRun.answer }, row = { ...data, created_at: null, id: savedRunId, at: new Date().toISOString() };
     boardAdd(savedRunId ? row : null, wrow);
     const [w, c] = await Promise.all([wrow ? runRank('world', f, wrow) : -1, savedRunId && p.classCode ? runRank('class', f, row) : -1]);
@@ -3564,7 +3553,7 @@ function tdClasses() {
 // ----- Leaderboard scores -----
 async function tdScores() {
   const admin = ADMIN_EMAILS.includes(TD.email);
-  const options = TD.classes.map(c => [c.code, c.name]).concat(admin ? [['__world', 'World (game names only)']] : []);
+  const options = TD.classes.map(c => [c.code, c.name]).concat(admin ? [['__world', 'World']] : []);
   if (!options.length) { $('td-body').innerHTML = '<p class="dim">Make a class first. Its Tidal Tones scores show up here.</p>'; return; }
   if (!options.some(([k]) => k === TD.scope)) TD.scope = TD.code || options[0][0];
   const world = TD.scope === '__world';
@@ -3573,7 +3562,7 @@ async function tdScores() {
   try {
     list = await run(async ({ fs, db }) => {
       if (!world) return (await fs.getDocs(classCol(fs, db, TD.scope))).docs.map(toRow);
-      // World: the 40 best runs of each mode and difficulty (game names only)
+      // World: the 40 best runs of each mode and difficulty 
       const lists = await Promise.all(['arcade', 'sprint'].flatMap(m => TIDAL_DIFFS.map(d => fs.getDocs(fs.query(worldCol(fs, db, m, d), fs.orderBy('score', 'desc'), fs.limit(40))).then(s => s.docs.map(worldRow(m, d))))));
       return [].concat(...lists);
     });
