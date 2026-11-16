@@ -3481,6 +3481,10 @@ function tdAssign() {
   const cls = tdClass(), a = (cls && cls.tidal_assignment) || { game: 'notes', level: 'easy', clef: 'treble', mode: 'arcade', goal: 40 };
   const seg = (name, opts, cur) => `<div class="seg">${opts.map(([v, l]) => `<input type="radio" name="${name}" id="${name}-${v}" value="${v}"${v === cur ? ' checked' : ''}><label for="${name}-${v}">${l}</label>`).join('')}</div>`;
   $('td-body').innerHTML = `
+    <div style="border:2px solid #4cc9f0;border-radius:14px;padding:12px 14px;margin:0 0 12px"><b style="font-size:1.1em">ASSIGN PRACTICE (ALL GAMES)</b>
+      <p style="margin:4px 0 10px;opacity:.85">Assignments now live on one page for every game: pick the class, the game, the skills, the goal and the dates. Students see it on their home page.</p>
+      <a class="btn" href="https://drkeyzzz.github.io/teacher/?new=1" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">OPEN THE ASSIGN PAGE ↗</a></div>
+    <details><summary style="cursor:pointer;opacity:.8;font-weight:700;margin:6px 0">Old: this game's own banner</summary>
     <p class="dim" style="margin:0">Choose what <b>${esc(cls.name)}</b> should practice. Students in this class see a banner on the start page with a <b>Use these settings</b> button and their progress toward today's goal. It stays until you change or clear it.</p>
     <div class="td-form" id="as-form">
       <label class="wide">Game${seg('as-game', [['notes', 'Note reading'], ['intervals', 'Intervals']], a.game)}</label>
@@ -3491,7 +3495,8 @@ function tdAssign() {
       <label>Goal: minutes per day<input id="as-min" type="number" min="0" max="240" value="${a.minutes || ''}" placeholder="optional"></label>
       <label class="wide">Note to students<input id="as-note" maxlength="140" value="${esc(a.note || '')}" placeholder="optional, e.g. Watch the ledger lines below the staff"></label>
     </div>
-    <div class="row"><button class="btn" type="button" id="as-save">Save assignment</button>${cls.tidal_assignment ? '<button class="btn ghost" type="button" id="as-clear">Clear assignment</button>' : ''}</div>`;
+    <div class="row"><button class="btn" type="button" id="as-save">Save assignment</button>${cls.tidal_assignment ? '<button class="btn ghost" type="button" id="as-clear">Clear assignment</button>' : ''}</div>
+    </details>`;
   const val = n => ($('td-body').querySelector(`input[name="${n}"]:checked`) || {}).value;
   $('as-save').onclick = async () => {
     const assignment = { game: val('as-game'), level: val('as-level'), clef: val('as-clef'), mode: val('as-mode'), goal: Math.max(0, Math.min(1000, +$('as-goal').value || 0)), minutes: Math.max(0, Math.min(240, +$('as-min').value || 0)), note: $('as-note').value.trim().slice(0, 140), set_at: Date.now() };
