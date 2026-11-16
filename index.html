@@ -2126,6 +2126,12 @@ function boardRows(f, rows = boardAll) {
   return rows.filter(r => typeof r.score === 'number' && r.mode === f.mode && (f.diff === 'all' || r.diff === f.diff) && (f.clef === 'all' || r.clef === f.clef) && (f.answer === 'all' || r.answer === f.answer))
     .sort((a, b) => b.score - a.score || (b.acc || 0) - (a.acc || 0) || String(a.at).localeCompare(String(b.at)));
 }
+// avatar head (2026-11-16): a classmate's small head before their name. MTGAvatar is set up near the end of the page,
+// so a board drawn before that waits for DOMContentLoaded; pages without it skip quietly.
+function avHead(el, code, sid) {
+  if (window.MTGAvatar) MTGAvatar.badge(el, code, sid, 22);
+  else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => { if (window.MTGAvatar) MTGAvatar.badge(el, code, sid, 22); }, { once: true });
+}
 function renderBoard() {
   const list = $('ranks'), empty = $('board-empty'), sum = $('board-summary');
   list.innerHTML = '';
@@ -2149,6 +2155,7 @@ function renderBoard() {
     const who = document.createElement('span'); who.className = 'who';
     const nm = document.createElement('span'); nm.className = 'nm'; nm.innerHTML = (ICONS.includes(r.icon) ? '<span class="nm-ic">' + iconHTML(r.icon) + '</span>' : '') + esc(r.name || 'Player');
     if (r.dev) { const t = document.createElement('span'); t.className = 'devtag'; t.title = 'Developer score'; t.textContent = 'DEV'; nm.append(' ', t); }
+    if (!r.world && r.class_code) avHead(nm, r.class_code, r.sid || r.name);   // avatar head (2026-11-16): class rows only
     const tags = document.createElement('span'); tags.className = 'tags';
     tags.textContent = [DIFF_TITLE[r.diff] || '', CLEF_SHORT[r.clef] || '', ANSWER_TITLE[r.answer] || '', r.names === 'solfege' ? 'Solfège' : ''].filter(Boolean).join(' · ');
     who.append(nm, tags);
