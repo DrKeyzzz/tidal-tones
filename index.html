@@ -4760,14 +4760,14 @@ function shade(hex, f) { const n = parseInt(hex.slice(1), 16); const c = s => Ma
   // ---------- the avatar on the game (perch, 2026-11-16) ----------
   // data-perch on this script = the spots to try, "selector|mode" separated by ";;" (mode sit-r / sit-l / sit-c = sits on the top edge
   // near the right / left / middle; stand = stands on it, like a map dot; beside-l / beside-r = stands in the margin next to it, feet
-  // level with its bottom). The first visible spot with room wins. It never covers
+  // level with its bottom; at:0.2,0.6 = stands with its feet at that spot inside it, e.g. on a table). The first visible spot with room wins. It never covers
   // buttons, pictures or text (checked with elementFromPoint); with no good spot the avatar is only in the corner, as before.
   // The corner head stays and still opens the Store. Store button "On the game" = localStorage mtg_avatar_perch_v1 ('0' = corner only).
   var PERCH = ((me && me.getAttribute('data-perch')) || '').split(';;').map(function(x){ x = x.split('|'); return x[0] && x[0].trim() ? { sel: x[0].trim(), mode: (x[1] || 'sit-r').trim() } : null; }).filter(Boolean);
   var PK = 'mtg_avatar_perch_v1', perch = null, pAv = null, pSpot = null, pBusy = 0;
   function perchWanted(){ try { return localStorage.getItem(PK) !== '0'; } catch(e){ return true; } }
   function perchLabel(){ return perchWanted() ? '🪑 On the game: on' : '🪑 On the game: off'; }
-  function pStand(m){ return m === 'stand' || m === 'beside-l' || m === 'beside-r'; }
+  function pStand(m){ return m === 'stand' || m === 'beside-l' || m === 'beside-r' || m.slice(0, 3) === 'at:'; }
   function pSize(){ return innerWidth < 600 ? 60 : innerWidth < 1100 ? 78 : 92; }
   function perchDraw(){
     if (!perch) return;
@@ -4800,7 +4800,8 @@ function shade(hex, f) { const n = parseInt(hex.slice(1), 16); const c = s => Ma
         for (var j = 0; j < list.length && !spot; j++) {
           var t = list[j], r = t.getBoundingClientRect(), m = PERCH[i].mode, st = pStand(m);
           if (!r.width || !r.height) continue;
-          if (m === 'beside-l' || m === 'beside-r') { x = m === 'beside-l' ? r.left - w - 6 : r.right + 6; y = r.bottom - h * 111 / 120; }
+          if (m.slice(0, 3) === 'at:') { var f = m.slice(3).split(','); x = r.left + r.width * +f[0] - w / 2; y = r.top + r.height * +f[1] - h * 111 / 120; }
+          else if (m === 'beside-l' || m === 'beside-r') { x = m === 'beside-l' ? r.left - w - 6 : r.right + 6; y = r.bottom - h * 111 / 120; }
           else if (st) { x = r.left + r.width / 2 - w / 2; y = r.top + r.height / 2 - h * 111 / 120; }
           else { if (r.width < w * 1.6) continue; x = m === 'sit-l' ? r.left + 14 : m === 'sit-c' ? r.left + r.width / 2 - w / 2 : r.right - w - 14; y = r.top - h * 92 / 120; }
           if (y < 2 || x < 2 || x + w > innerWidth - 2 || y + h > innerHeight) continue;
