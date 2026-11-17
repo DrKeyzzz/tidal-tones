@@ -1537,14 +1537,14 @@ const needsAcc = () => settings.acc === 'on' || (drill && drill.some(d => d.acc 
 // intervals take much longer to read, and Hard's full pad longer still
 const IVL_EASE = { easy: 2.25, medium: 2.6, hard: 3 };   // intervals start slow (level 1 boat: 18 / 21 / 24 s)…
 const newbieOn = () => !isIvl() && settings.newbie;
-const easeFactor = () => isIvl() ? IVL_EASE[settings.ivl] : newbieOn() ? 1.5 : (settings.names === 'solfege' && needsAcc()) ? 1.35 : 1;
+const easeFactor = () => isIvl() ? IVL_EASE[settings.ivl] : newbieOn() ? 2 : (settings.names === 'solfege' && needsAcc()) ? 1.35 : 1;   // Newbie: level 1 boat 16 s (was 12 s; David 2026-11-17: too fast)
 function tuning() {
   if (!game.running) return { T: 8.5, I: 2.4 };
   const k = easeFactor();
   if (settings.mode === 'practice') return { T: 9 * k, I: 3 * k };
   if (settings.mode === 'sprint') return { T: 6 * k, I: 0 };
   const L = game.level - 1;
-  const decay = isIvl() ? .90 : newbieOn() ? .92 : .88;           // …then pick up 10% per level, reaching the old pace around level 10
+  const decay = isIvl() ? .90 : newbieOn() ? .95 : .88;           // Newbie speeds up gently (5% a level; was 8%)           // …then pick up 10% per level, reaching the old pace around level 10
   const p = game.pace || 1;                                                      // speed follows accuracy (see adaptPace)
   return { T: Math.max(1.3 * k, 8 * k * Math.pow(decay, L) / p), I: Math.max(.5 * k, 2.8 * k * Math.pow(decay + .01, L) / p) };
 }
