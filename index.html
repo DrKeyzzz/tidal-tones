@@ -2155,7 +2155,7 @@ function renderBoard() {
     const who = document.createElement('span'); who.className = 'who';
     const nm = document.createElement('span'); nm.className = 'nm'; nm.innerHTML = (ICONS.includes(r.icon) ? '<span class="nm-ic">' + iconHTML(r.icon) + '</span>' : '') + esc(r.name || 'Player');
     if (r.dev) { const t = document.createElement('span'); t.className = 'devtag'; t.title = 'Developer score'; t.textContent = 'DEV'; nm.append(' ', t); }
-    if (!r.world && r.class_code) avHead(nm, r.class_code, r.sid || r.name);   // avatar head (2026-11-16): class rows only
+    if (r.class_code) avHead(nm, r.class_code, r.sid || r.name);   // avatar head (2026-11-16): class rows only
     const tags = document.createElement('span'); tags.className = 'tags';
     tags.textContent = [DIFF_TITLE[r.diff] || '', CLEF_SHORT[r.clef] || '', ANSWER_TITLE[r.answer] || '', r.names === 'solfege' ? 'Solfège' : ''].filter(Boolean).join(' · ');
     who.append(nm, tags);
